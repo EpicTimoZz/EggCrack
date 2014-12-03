@@ -21,7 +21,7 @@ EggCrack originally gained its popularity on Nodus Forums back in 2013, when the
 No downloads are available at this time.
 <br/><br/>
 <b>Bleeding edge</b><br/>
-Bleeding edge builds, or most recent builds, are available by cloning the <i>master</i> branch.
+Bleeding edge builds, or most recent builds, are available by cloning the <i>master</i> branch. <br/>
 </p>
 
 <h2>Contributing</h2>
@@ -33,6 +33,9 @@ If you would like to contribute to the development of EggCrack, fork the reposit
 <b>Maintaining</b><br/>
 Should you be interested in maintaining the project as a team member, contact me using any of the available contact methods supplied and state your request.
 </p>
+```javascript
+git clone https://github.com/Manevolent/EggCrack.git
+```
 
 <h2>Bugs and Issues</h2>
 <p>
