@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <name>EggCrack</name>
+    <description>A Minecraft account recovery tool</description>
+
+    <groupId>net.teamlixo.eggcrack</groupId>
+    <artifactId>eggcrack</artifactId>
+    <version>2.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <licenses>
+        <license>
+            <name>GNU General Public License, version 2</name>
+            <url>http://www.gnu.org/licenses/gpl-2.0.html</url>
+        </license>
+    </licenses>
+    <organization>
+        <name>Team Lixo</name>
+        <url>https://teamlixo.net/</url>
+    </organization>
+    <issueManagement>
+        <system>GitHub</system>
+        <url>https://github.com/Manevolent/EggCrack/issues</url>
+    </issueManagement>
+    <developers>
+        <developer>
+            <name>Manevolent</name>
+            <email>teamlixo@gmail.com</email>
+        </developer>
+    </developers>
+    <scm>
+        <connection>https://github.com/Manevolent/EggCrack.git</connection>
+        <url>https://github.com/Manevolent/EggCrack</url>
+    </scm>
+
+    <dependencies>
+
+    </dependencies>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+    <build>
+
+    </build>
+</project>
