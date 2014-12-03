@@ -9,9 +9,10 @@ EggCrack originally gained its popularity on Nodus Forums back in 2013, when the
 </p>
 <h2>Features</h2>
 <ul>
-<li>Asynchronized, fast cracking with configurable load size and request interval
-<li>Meet-in-the-middle methods for quickly recovering single accounts
-<li>HTTP, HTTPS, SOCKS 4, SOCKS 4a, and SOCKS 5 proxies all fully supported
+<li>Asynchronized, fast cracking with configurable load size and request interval</li>
+<li>Meet-in-the-middle methods for quickly recovering single accounts</li>
+<li>HTTP, HTTPS, SOCKS 4, SOCKS 4a, and SOCKS 5 proxies all fully supported</li>
+<li>Command-line interface or windowed interface for both server and desktop use</li>
 </ul>
 
 <h2>Download</h2>
@@ -46,7 +47,7 @@ If you have discovered a vulnerability in our code, malicious intent of the soft
 <h2>Contact</h2>
 <p>We can be reached at the following locations:</p>
 <ul>
-<li>Twitter: http://twitter.com/teamlixo
-<li>Email: teamlixo@gmail.com
-<li>MPGH.net: http://www.mpgh.net/forum/member.php?u=2259931
+<li>Twitter: http://twitter.com/teamlixo</li>
+<li>Email: teamlixo@gmail.com</li>
+<li>MPGH.net: http://www.mpgh.net/forum/member.php?u=2259931</li>
 </ul>
