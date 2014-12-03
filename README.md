@@ -24,5 +24,19 @@ Should you be interested in maintaining the project as a team member, contact me
 </p>
 
 <h2>Bugs and Issues</h2>
+<p>
+<b>Public bugs</b><br/>
 We welcome any issues to be submitted through the repository's issue tracker. Keep in mind that any bugs or suggestions reported outside this system are likely to be ignored.<br/>
 https://github.com/Manevolent/EggCrack/issues
+<br/><br/>
+<b>Security issues</b>
+If you have discovered a vulnerability in our code, malicious intent of the software, or other security issues, please contact us directly instead of publicly posting an issue to avoid spreading it.
+</p>
+
+<h2>Contact</h2>
+<p>We can be reached at the following locations:</p>
+<ul>
+<li>Twitter: http://twitter.com/teamlixo
+<li>Email: teamlixo@gmail.com
+<li>MPGH.net: http://www.mpgh.net/forum/member.php?u=2259931
+</ul>
