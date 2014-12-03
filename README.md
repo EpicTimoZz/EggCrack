@@ -10,7 +10,11 @@ EggCrack originally gained its popularity on Nodus Forums back in 2013, when the
 
 <h2>Download</h2>
 <p>
+<b>Releases</b><br/>
 No downloads are available at this time.
+<br/><br/>
+<b>Bleeding edge</b><br/>
+Bleeding edge builds, or most recent builds, are available by cloning the <i>master</i> branch.
 </p>
 
 <h2>Contributing</h2>
