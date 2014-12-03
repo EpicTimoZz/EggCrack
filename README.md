@@ -6,14 +6,13 @@ EggCrack is a well-known Minecraft account recovery tool. Popular for its intuit
 <br/><br/>
 <b>Origins</b><br/>
 EggCrack originally gained its popularity on Nodus Forums back in 2013, when the original Java program was posted and garnered much attention. From there, a thread was made on MPGH (http://mpgh.net/), which still holds much attention and remains the most popular thread in its section.
-<br/><br/>
-<b>Features</b><br/>
+</p>
+<h2>Features</h2>
 <ul>
 <li>Asynchronized, fast cracking with configurable load size and request interval
 <li>Meet-in-the-middle methods for quickly recovering single accounts
 <li>HTTP, HTTPS, SOCKS 4, SOCKS 4a, and SOCKS 5 proxies all fully supported
 </ul>
-</p>
 
 <h2>Download</h2>
 <p>
