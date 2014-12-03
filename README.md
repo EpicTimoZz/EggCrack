@@ -29,7 +29,7 @@ Should you be interested in maintaining the project as a team member, contact me
 We welcome any issues to be submitted through the repository's issue tracker. Keep in mind that any bugs or suggestions reported outside this system are likely to be ignored.<br/>
 https://github.com/Manevolent/EggCrack/issues
 <br/><br/>
-<b>Security issues</b>
+<b>Security issues</b><br/>
 If you have discovered a vulnerability in our code, malicious intent of the software, or other security issues, please contact us directly instead of publicly posting an issue to avoid spreading it.
 </p>
 
