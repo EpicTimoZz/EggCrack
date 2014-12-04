@@ -177,10 +177,9 @@ public class UserInterface extends JDialog {
         });
     }
 
-    public static void main(String[] args) {
-
+    public static void main(String[] args) throws
+            ClassNotFoundException, UnsupportedLookAndFeelException, InstantiationException, IllegalAccessException {
         try {
-
             UIManager.put("nimbusBase", new Color(10, 10, 10));
             UIManager.put("nimbusBlueGrey", new Color(200, 200, 210));
             UIManager.put("control", new Color(150, 150, 150));
@@ -191,21 +190,14 @@ public class UserInterface extends JDialog {
                     break;
                 }
             }
-
-
         } catch (Exception e) {
-            // If Nimbus is not available, fall back to cross-platform
-            try {
-                UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-            } catch (Exception ex) {
-
-            }
+            UIManager.setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
         }
 
         UserInterface dialog = new UserInterface();
         dialog.pack();
         dialog.setLocationRelativeTo(null);
-        dialog.setVisible(true);
+        dialog.setVisible(true); //Show.
 
         System.exit(0);
     }

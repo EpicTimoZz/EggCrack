@@ -5,6 +5,9 @@ import net.teamlixo.eggcrack.credential.Credential;
 
 import java.net.Proxy;
 
+/**
+ * Internal authentication service interface.
+ */
 public interface AuthenticationService {
     /**
      * Authenticates an account with a password.

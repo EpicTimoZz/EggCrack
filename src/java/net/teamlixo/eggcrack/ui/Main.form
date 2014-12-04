@@ -85,11 +85,6 @@
                           <foreground color="-1"/>
                           <model>
                             <item value="Minecraft Yggdrasil Authentication"/>
-                            <item value="MD4 hashes"/>
-                            <item value="MD5 hashes"/>
-                            <item value="SHA-128 hashes"/>
-                            <item value="SHA-256 hashes"/>
-                            <item value="SHA-512 hashes"/>
                           </model>
                         </properties>
                       </component>
@@ -1014,6 +1009,7 @@
                 <preferred-size width="500" height="100"/>
               </grid>
             </constraints>
+            <properties/>
           </component>
         </children>
       </grid>

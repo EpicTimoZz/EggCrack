@@ -7,6 +7,9 @@ import net.teamlixo.eggcrack.credential.Credential;
 
 import java.net.Proxy;
 
+/**
+ * Extends the AuthenticationService class and provides password authentication to the system.
+ */
 public abstract class PasswordAuthenticationService implements AuthenticationService {
     @Override
     public boolean authenticate(Account account, Credential credential, Proxy proxy) throws AuthenticationException {

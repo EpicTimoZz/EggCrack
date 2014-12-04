@@ -19,7 +19,9 @@ import net.teamlixo.eggcrack.objective.Objective;
 import net.teamlixo.eggcrack.objective.ObjectiveCompleted;
 import net.teamlixo.eggcrack.objective.ObjectiveRequests;
 import net.teamlixo.eggcrack.objective.ObjectiveTime;
+import net.teamlixo.eggcrack.ui.UserInterface;
 
+import javax.swing.*;
 import java.io.*;
 import java.net.*;
 import java.util.Calendar;
@@ -38,7 +40,10 @@ import java.util.logging.Logger;
  * Time: 4:46 PM
  */
 public final class Main {
-    public static final void main(String[] args) throws IOException {
+    public static final void main(String[] args) throws
+            IOException, ClassNotFoundException, UnsupportedLookAndFeelException,
+            InstantiationException, IllegalAccessException {
+
         System.setProperty("java.net.preferIPv4Stack", "true");
 
         EggCrack.LOGGER = Logger.getLogger("EggCrack");
@@ -54,6 +59,8 @@ public final class Main {
 
         //Read in parameters.
         OptionParser optionsParser = new OptionParser();
+
+        ArgumentAcceptingOptionSpec consoleArgument = optionsParser.accepts("console").withOptionalArg();
 
         ArgumentAcceptingOptionSpec debugArgument = optionsParser.accepts("debug").withOptionalArg();
 
@@ -80,8 +87,12 @@ public final class Main {
         if (optionSet.has(debugArgument)) {
             consoleHandler.setLevel(Level.FINEST);
             EggCrack.LOGGER.fine("Console debugging enabled.");
-        } else
-            consoleHandler.setLevel(Level.INFO);
+        } else consoleHandler.setLevel(Level.INFO);
+
+        if (!optionSet.has(consoleArgument)) {
+            UserInterface.main(args);
+            return;
+        }
 
         int threads = (Integer) optionSet.valueOf(threadsArgument);
         float interval = ((Integer) optionSet.valueOf(intervalArgument)) / 1f;

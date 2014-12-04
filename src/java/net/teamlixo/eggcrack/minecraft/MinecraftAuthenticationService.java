@@ -17,6 +17,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+/**
+ * Lowest-level functionality of EggCrack; all requests are created and managed here.
+ */
 public class MinecraftAuthenticationService extends PasswordAuthenticationService {
     private static final int MINIMUM_PASSWORD_LEGTH = 6;
     private static final InetAddress LOCAL_ADDRESS = InetAddress.getLoopbackAddress();
@@ -36,9 +39,7 @@ public class MinecraftAuthenticationService extends PasswordAuthenticationServic
 
     public MinecraftAuthenticationService(AuthenticationFactory authenticationFactory, float interval, Tracker tracker) {
         this.authenticationFactory = authenticationFactory;
-
         this.interval = interval;
-
         this.tracker = tracker;
     }
 
@@ -56,7 +57,9 @@ public class MinecraftAuthenticationService extends PasswordAuthenticationServic
             return false;
 
         if (password == null) {
-            tracker.setAttempts(tracker.getAttempts() + 1);
+            synchronized (tracker) {
+                tracker.setAttempts(tracker.getAttempts() + 1);
+            }
             return false;
         }
 
@@ -67,9 +70,14 @@ public class MinecraftAuthenticationService extends PasswordAuthenticationServic
         if (password.equalsIgnoreCase("%user"))
             password = username;
 
-        password = password.trim().replace("\n", "").replace("\r", "");
+        //Little bit of sanitizing.
+        password = password.replace("\n", "").replace("\r", "").trim();
+
+        //Make sure the password isn't too short.
         if (password.length() < MINIMUM_PASSWORD_LEGTH) {
-            tracker.setAttempts(tracker.getAttempts() + 1);
+            synchronized (tracker) {
+                tracker.setAttempts(tracker.getAttempts() + 1);
+            }
             return false;
         }
 
@@ -79,8 +87,10 @@ public class MinecraftAuthenticationService extends PasswordAuthenticationServic
                 LOCAL_ADDRESS :
                 ((InetSocketAddress)proxy.address()).getAddress();
 
-        if (!intervalMap.containsKey(proxyAddress))
-            intervalMap.put(proxyAddress, new IntervalTimer(interval, IntervalTimer.RateWindow.SECOND));
+        synchronized (intervalMap) { //Not sure if HashMaps are thread-safe.
+            if (!intervalMap.containsKey(proxyAddress))
+                intervalMap.put(proxyAddress, new IntervalTimer(interval, IntervalTimer.RateWindow.SECOND));
+        }
 
         Timer timer = intervalMap.get(proxyAddress);
         if (!timer.isReady())
@@ -95,7 +105,7 @@ public class MinecraftAuthenticationService extends PasswordAuthenticationServic
         userAuthentication.setPassword(password);
 
         try {
-            synchronized (tracker) {
+            synchronized (tracker) { //Synchronize around the tracker to avoid async collisions.
                 tracker.setRequests(tracker.getRequests() + 1);
             }
 

@@ -2,12 +2,18 @@ package net.teamlixo.eggcrack.authentication;
 
 import net.teamlixo.eggcrack.EggCrack;
 import net.teamlixo.eggcrack.account.Account;
+import net.teamlixo.eggcrack.account.AccountListener;
 import net.teamlixo.eggcrack.credential.Credential;
 
 import java.net.Proxy;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
+/**
+ * Helper class designed to provide asynchronous authentication functionality to EggCrack. Calls AuthenticationCallback
+ * with completed or failed responses. Handles one account, but narrows down to the AuthenticationService class, which
+ * should be both thread-safe and support many separate requesting accounts asynchronously.
+ */
 public class RunnableAuthenticator implements Runnable {
     private AuthenticationService authenticationService;
     private Account account;
@@ -29,9 +35,11 @@ public class RunnableAuthenticator implements Runnable {
 
     @Override
     public void run() {
-        //Startup
-        Credential credential = credentialIterator.next();
         Thread.currentThread().setName("Authenticator-" + account.getUsername());
+
+        Credential credential = credentialIterator.next();
+        AccountListener accountListener = account.getListener();
+        if (accountListener != null) accountListener.onAccountStarted();
 
         while (proxyIterator.hasNext()) {
             try {
@@ -41,10 +49,13 @@ public class RunnableAuthenticator implements Runnable {
                 EggCrack.LOGGER.finest("[Account: " + account.getUsername() +
                         "] Sending authentication request [password=" + credential.toString() + "]...");
 
+                if (accountListener != null) accountListener.onAccountAttempting(credential);
+
                 try {
                     if (authenticationService.authenticate(account, credential, proxyIterator.next())) {
                         authenticationCallback.onAuthenticationCompleted(account, credential);
-                        break;
+                        if (accountListener != null) accountListener.onAccountCompleted(credential);
+                        return;
                     } else {
                         credential = credentialIterator.next();
                     }
@@ -63,7 +74,7 @@ public class RunnableAuthenticator implements Runnable {
             }
         }
 
-        //Cleanup
+        if (accountListener != null) accountListener.onAccountFailed();
         authenticationCallback.onAuthenticationFailed(account);
     }
 }
