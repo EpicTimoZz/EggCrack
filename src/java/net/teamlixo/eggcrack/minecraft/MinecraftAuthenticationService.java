@@ -116,6 +116,8 @@ public class MinecraftAuthenticationService extends PasswordAuthenticationServic
 
             return userAuthentication.isLoggedIn();
         } catch (com.mojang.authlib.exceptions.AuthenticationException e) {
+            System.out.println(e.getMessage());
+
             timer.next();
             String errorMessage = e.getMessage();
 

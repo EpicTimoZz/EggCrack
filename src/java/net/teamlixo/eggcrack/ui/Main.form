@@ -353,7 +353,7 @@
                       </grid>
                     </children>
                   </grid>
-                  <grid id="c861c" layout-manager="GridLayoutManager" row-count="4" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
+                  <grid id="c861c" layout-manager="GridLayoutManager" row-count="3" column-count="4" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
                     <margin top="5" left="10" bottom="5" right="2"/>
                     <constraints>
                       <grid row="4" column="0" row-span="1" col-span="1" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
@@ -398,65 +398,14 @@
                           </component>
                         </children>
                       </grid>
-                      <grid id="69ee2" layout-manager="GridLayoutManager" row-count="1" column-count="2" same-size-horizontally="false" same-size-vertically="false" hgap="-1" vgap="-1">
-                        <margin top="0" left="0" bottom="0" right="0"/>
-                        <constraints>
-                          <grid row="1" column="0" row-span="1" col-span="4" vsize-policy="3" hsize-policy="3" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
-                        </constraints>
-                        <properties>
-                          <background color="-1"/>
-                        </properties>
-                        <border type="none"/>
-                        <children>
-                          <component id="28f3a" class="javax.swing.JLabel">
-                            <constraints>
-                              <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false">
-                                <minimum-size width="100" height="-1"/>
-                                <preferred-size width="100" height="-1"/>
-                                <maximum-size width="100" height="-1"/>
-                              </grid>
-                            </constraints>
-                            <properties>
-                              <labelFor value="f27d"/>
-                              <text value="Interval (ms):"/>
-                            </properties>
-                          </component>
-                          <component id="f27d" class="javax.swing.JSpinner" binding="interval">
-                            <constraints>
-                              <grid row="0" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="6" anchor="8" fill="1" indent="0" use-parent-layout="false"/>
-                            </constraints>
-                            <properties/>
-                          </component>
-                        </children>
-                      </grid>
                       <component id="b5b4e" class="javax.swing.JCheckBox" binding="skipNonPremiumAccountsCheckBox" default-binding="true">
                         <constraints>
-                          <grid row="3" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                          <grid row="2" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
                           <background color="-1"/>
                           <selected value="true"/>
                           <text value="Skip non-premium accounts"/>
-                        </properties>
-                      </component>
-                      <component id="3e397" class="javax.swing.JCheckBox" binding="autoSort">
-                        <constraints>
-                          <grid row="3" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                        </constraints>
-                        <properties>
-                          <background color="-1"/>
-                          <selected value="true"/>
-                          <text value="Auto-sort table"/>
-                        </properties>
-                      </component>
-                      <component id="5c212" class="javax.swing.JCheckBox" binding="threadClock">
-                        <constraints>
-                          <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
-                        </constraints>
-                        <properties>
-                          <background color="-1"/>
-                          <selected value="true"/>
-                          <text value="Thread clock"/>
                         </properties>
                       </component>
                     </children>
@@ -890,14 +839,14 @@
                           <text value="Version:"/>
                         </properties>
                       </component>
-                      <component id="c6fec" class="javax.swing.JLabel">
+                      <component id="c6fec" class="javax.swing.JLabel" binding="versionLabel">
                         <constraints>
                           <grid row="1" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
                           <focusable value="false"/>
                           <font size="14"/>
-                          <text value="1.8 [unclocked]"/>
+                          <text value="2.0"/>
                         </properties>
                       </component>
                       <component id="38beb" class="javax.swing.JLabel">
@@ -917,7 +866,7 @@
                         <properties>
                           <focusable value="false"/>
                           <font size="14"/>
-                          <text value="January 8, 2014"/>
+                          <text value="December 4, 2014"/>
                         </properties>
                       </component>
                       <component id="9f810" class="javax.swing.JLabel">
@@ -957,7 +906,7 @@
                         <properties>
                           <focusable value="false"/>
                           <font size="14"/>
-                          <text value="Freeware"/>
+                          <text value="GNU GPL v2"/>
                         </properties>
                       </component>
                     </children>
@@ -977,12 +926,12 @@
                     </properties>
                     <border type="none" title="    "/>
                     <children>
-                      <component id="32aa9" class="javax.swing.JLabel">
+                      <component id="32aa9" class="javax.swing.JLabel" binding="aboutPanel">
                         <constraints>
                           <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                         </constraints>
                         <properties>
-                          <text value="&lt;html&gt;&lt;p&gt;Thanks for checking out EggCrack! I've written tons more software, such as: &lt;br/&gt; &lt;ul&gt; &lt;li&gt;Leonidas (Hack/exploitation tool)&lt;/li&gt; &lt;li&gt;Crax3r (EggCrack's .NET cousin)&lt;/li&gt;&lt;/ul&gt;&#10;I'm current an active member of &lt;b&gt;Team Lixo&lt;/b&gt;. You can see &lt;br/&gt;our videos at &lt;a href=&quot;http://youtube.com/teamlixo/&quot;&gt;http://youtube.com/teamlixo&lt;/a&gt;&lt;/p&gt;&#10;&lt;br/&gt;&lt;br/&gt;&#10;Please consider joining &lt;a href=&quot;http://crackingforums.org/&quot;&gt;CrackingForums&lt;/a&gt; (crackingforums.org)."/>
+                          <text value="&lt;html&gt; &lt;p&gt;I'm currently an active member of &lt;b&gt;Team Lixo&lt;/b&gt;. You can see &lt;br/&gt;our videos at &lt;a href=&quot;https://youtube.com/teamlixo/&quot;&gt;https://youtube.com/teamlixo&lt;/a&gt;&lt;/p&gt; &lt;br/&gt;&lt;br/&gt; &lt;p&gt; EggCrack is now an open-source project! Come check us out on GitHub:&lt;br/&gt; &lt;a href=&quot;https://github.com/Manevolent/EggCrack&quot;&gt;https://github.com/Manevolent/EggCrack&lt;/a&gt; &lt;/p&gt;&#10;&lt;br/&gt;&lt;br/&gt;&#10;&lt;p&gt;EggCrack is running in GUI mode. If you would like to run&#10;EggCrack from&lt;br/&gt; the console, use the &lt;i&gt;-console&lt;/i&gt; flag.&lt;/p&gt;"/>
                         </properties>
                       </component>
                     </children>

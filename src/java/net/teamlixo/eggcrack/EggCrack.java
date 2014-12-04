@@ -48,7 +48,8 @@ public final class EggCrack implements Runnable, AuthenticationCallback, ProxyCa
                     ExtendedList<Credential> credentialList,
                     ExtendedList<Proxy> proxyList,
                     ExtendedList<Objective> objectiveList,
-                    ExtendedList<AccountOutput> outputList, Tracker tracker,
+                    ExtendedList<AccountOutput> outputList,
+                    Tracker tracker,
                     URL checkUrl) {
         this.executorService = executorService;
         this.authenticationService = authenticationService;

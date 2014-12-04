@@ -1,5 +1,6 @@
 package net.teamlixo.eggcrack;
 
+import com.google.gson.Gson;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -8,6 +9,8 @@ import net.teamlixo.eggcrack.account.output.AccountOutput;
 import net.teamlixo.eggcrack.account.output.FileAccountOutput;
 import net.teamlixo.eggcrack.account.output.UrlAccountOutput;
 import net.teamlixo.eggcrack.authentication.AuthenticationService;
+import net.teamlixo.eggcrack.config.Configuration;
+import net.teamlixo.eggcrack.config.JsonConfiguration;
 import net.teamlixo.eggcrack.credential.Credential;
 import net.teamlixo.eggcrack.credential.Credentials;
 import net.teamlixo.eggcrack.list.ExtendedList;
@@ -22,6 +25,10 @@ import net.teamlixo.eggcrack.objective.ObjectiveTime;
 import net.teamlixo.eggcrack.ui.UserInterface;
 
 import javax.swing.*;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
+import javax.swing.plaf.FontUIResource;
+import java.awt.*;
 import java.io.*;
 import java.net.*;
 import java.util.Calendar;
@@ -44,16 +51,14 @@ public final class Main {
             IOException, ClassNotFoundException, UnsupportedLookAndFeelException,
             InstantiationException, IllegalAccessException {
 
+        //Prefer IPv4 stack. Fixes some issues.
         System.setProperty("java.net.preferIPv4Stack", "true");
 
+        //Configure the logger (It's just going to output to console)
         EggCrack.LOGGER = Logger.getLogger("EggCrack");
-
-        //Configure the logger's handler (It's just going to output to console)
         ConsoleHandler consoleHandler = new ConsoleHandler();
         consoleHandler.setFormatter(new LineLogFormatter());
         EggCrack.LOGGER.addHandler(consoleHandler);
-
-        //And, of course, add the handler itself to the logger:
         EggCrack.LOGGER.setUseParentHandlers(false);
         EggCrack.LOGGER.setLevel(Level.ALL);
 
@@ -61,8 +66,8 @@ public final class Main {
         OptionParser optionsParser = new OptionParser();
 
         ArgumentAcceptingOptionSpec consoleArgument = optionsParser.accepts("console").withOptionalArg();
-
         ArgumentAcceptingOptionSpec debugArgument = optionsParser.accepts("debug").withOptionalArg();
+        ArgumentAcceptingOptionSpec configArgument = optionsParser.accepts("config").withRequiredArg().ofType(String.class).defaultsTo("eggcrack.json");
 
         ArgumentAcceptingOptionSpec proxyArgument = optionsParser.accepts("proxies").withRequiredArg().ofType(String.class).defaultsTo("proxies.txt");
         ArgumentAcceptingOptionSpec usernameArgument = optionsParser.accepts("usernames").withRequiredArg().ofType(String.class).defaultsTo("usernames.txt");
@@ -89,7 +94,77 @@ public final class Main {
             EggCrack.LOGGER.fine("Console debugging enabled.");
         } else consoleHandler.setLevel(Level.INFO);
 
-        if (!optionSet.has(consoleArgument)) {
+        File file = new File((String) optionSet.valueOf(configArgument));
+        Configuration configuration = (new Gson()).fromJson(new InputStreamReader(new FileInputStream(file)), JsonConfiguration.class);
+        String branch = ((JsonConfiguration)configuration).getUpdateBranch();
+        int version = configuration.getVersion();
+
+        System.out.println("EggCrack build " + configuration.getVersion() + ", Copyright (C) Team Lixo");
+        System.out.println("EggCrack comes with ABSOLUTELY NO WARRANTY. This is free software,");
+        System.out.println("and you are welcome to redistribute it under certain conditions.");
+        System.out.println("");
+
+        final boolean guiAvailable = Desktop.isDesktopSupported() && !GraphicsEnvironment.isHeadless();
+        boolean guiEnabled = !optionSet.has(consoleArgument);
+
+        if (configuration.isUpdateEnabled() && (branch.equals("beta") || branch.equals("stable"))) {
+            EggCrack.LOGGER.fine("Checking for updates to build #" + version + " on branch " +  branch + "...");
+
+            try {
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(configuration.getUpdateURL().openStream()));
+                int remoteVersion = Integer.parseInt(bufferedReader.readLine());
+                if (remoteVersion > 0 && remoteVersion > version) {
+                    EggCrack.LOGGER.warning("A newer version of EggCrack is available: build #" + remoteVersion + ".");
+                    EggCrack.LOGGER.warning("Download at GitHub: https://github.com/Manevolent/EggCrack");
+
+                    if (guiEnabled) {
+                        JLabel label = new JLabel();
+
+                        JEditorPane ep = new JEditorPane("text/html",
+                                "<html>An update for EggCrack is available for download online. " +
+                                "If you would like to download this update, please visit our GitHub page:<br/><br/>" +
+                                "<a href=\"https://github.com/Manevolent/EggCrack\">https://github.com/Manevolent/EggCrack</a><br/>" +
+                                "Current build: #" + version + "<br/><b>Updated build: #" + remoteVersion + " (branch: " + branch + ")</b><br/><br/>" +
+                                "If you would not like to be notified with these messages, see your eggcrack.json configuration.<br/><br/></html>"
+                        );
+
+                        ep.setBackground(label.getBackground());
+                        ep.setEditable(false);
+                        ep.addHyperlinkListener(new HyperlinkListener()
+                        {
+                            @Override
+                            public void hyperlinkUpdate(HyperlinkEvent e)
+                            {
+                                if (e.getEventType().equals(HyperlinkEvent.EventType.ACTIVATED))
+                                    if (guiAvailable)
+                                    {
+                                        try {
+                                            Desktop.getDesktop().browse(e.getURL().toURI());
+                                            System.exit(0);
+                                        } catch (IOException e1) {
+                                        } catch (URISyntaxException e1) {
+                                        }
+                                    }
+                            }
+                        });
+
+                        JOptionPane.showMessageDialog(null, ep);
+                    }
+                } else {
+                    EggCrack.LOGGER.fine("Update check complete; no new versions found.");
+                }
+            } catch (Exception ex) {
+                EggCrack.LOGGER.warning("Problem retrieving updates from the repository:");
+                ex.printStackTrace();
+            }
+        }
+
+        if (guiEnabled) {
+            if (!guiAvailable)
+                throw new UnsupportedOperationException("Desktop environment not supported on this system.");
+
+            EggCrack.LOGGER.info("Skipping console arguments and launching in GUI-mode...");
+
             UserInterface.main(args);
             return;
         }
@@ -122,7 +197,6 @@ public final class Main {
 
         if (objectiveList.size() <= 0) {
             EggCrack.LOGGER.warning("No objectives provided! Session will continue until all accounts are attempted.");
-            return;
         } else {
             EggCrack.LOGGER.fine("[Options] objectives=" + objectiveList.size());
         }

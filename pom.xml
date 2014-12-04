@@ -37,6 +37,21 @@
         <url>https://github.com/Manevolent/EggCrack</url>
     </scm>
 
+    <repositories>
+        <repository>
+            <id>lib</id>
+            <name>lib</name>
+            <releases>
+                <enabled>true</enabled>
+                <checksumPolicy>ignore</checksumPolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <url>file://${project.basedir}/lib</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <!-- Dependencies provided by the public Maven repositories -->
         <dependency>
@@ -84,9 +99,7 @@
         <dependency>
             <artifactId>authlib</artifactId>
             <groupId>com.mojang.authlib</groupId>
-            <version>1.5.16</version>
-            <scope>system</scope>
-            <systemPath>${basedir}/lib/authlib-1.5.16.jar</systemPath>
+            <version>1.5.17</version>
         </dependency>
     </dependencies>
 
@@ -109,20 +122,47 @@
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.1</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${basedir}/release/lib/</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>false</overWriteSnapshots>
+                            <overWriteIfNewer>true</overWriteIfNewer>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>build-classpath</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
-                    <outputDirectory>${basedir}/release/bin/</outputDirectory>
+                    <outputDirectory>${basedir}/release/</outputDirectory>
                     <excludes>
                         <exclude>**/log4j.properties</exclude>
                     </excludes>
                     <archive>
                         <manifest>
                             <mainClass>net.teamlixo.eggcrack.Main</mainClass>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
                         </manifest>
                     </archive>
                 </configuration>
             </plugin>
-
         </plugins>
     </build>
 </project>

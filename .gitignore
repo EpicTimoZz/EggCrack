@@ -36,10 +36,12 @@ Thumbs.db
 ######################
 usernames.txt
 passwords.txt
+proxies.txt
 output.txt
 cracked.txt
 checked.txt
 recovered.txt
+log.txt
 
 # Maven              #
 ######################
