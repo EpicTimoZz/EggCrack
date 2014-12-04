@@ -5,7 +5,7 @@ import java.util.concurrent.ThreadFactory;
 public class AuthenticatorThreadFactory implements ThreadFactory {
     private final int priority;
     public AuthenticatorThreadFactory(int priority) {
-        this.priority = Thread.MIN_PRIORITY;
+        this.priority = priority;
     }
 
     @Override

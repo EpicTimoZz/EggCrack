@@ -1,4 +1,4 @@
-package net.teamlixo.eggcrack;
+package net.teamlixo.eggcrack.session;
 
 public final class Tracker {
     private int completed = 0;
@@ -6,6 +6,7 @@ public final class Tracker {
     private int requests = 0;
     private int attempts = 0;
     private long start = System.currentTimeMillis();
+    private int total = 0;
 
     public int getFailed() {
         return failed;
@@ -42,4 +43,10 @@ public final class Tracker {
     public long elapsedMilliseconds() {
         return System.currentTimeMillis() - start;
     }
+
+    public int getTotal() {
+        return total;
+    }
+
+    public void setTotal(int total) { this.total = total; }
 }

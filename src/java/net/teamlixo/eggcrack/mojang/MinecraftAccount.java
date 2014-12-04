@@ -1,4 +1,4 @@
-package net.teamlixo.eggcrack.minecraft;
+package net.teamlixo.eggcrack.mojang;
 
 import net.teamlixo.eggcrack.account.Account;
 

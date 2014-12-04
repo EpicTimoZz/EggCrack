@@ -1,6 +1,7 @@
 package net.teamlixo.eggcrack;
 
 import com.google.gson.Gson;
+import com.mojang.authlib.Agent;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -15,37 +16,31 @@ import net.teamlixo.eggcrack.credential.Credential;
 import net.teamlixo.eggcrack.credential.Credentials;
 import net.teamlixo.eggcrack.list.ExtendedList;
 import net.teamlixo.eggcrack.list.array.ExtendedArrayList;
-import net.teamlixo.eggcrack.minecraft.MinecraftAccount;
-import net.teamlixo.eggcrack.minecraft.MinecraftAuthenticationFactory;
-import net.teamlixo.eggcrack.minecraft.MinecraftAuthenticationService;
+import net.teamlixo.eggcrack.mojang.MinecraftAccount;
+import net.teamlixo.eggcrack.mojang.MojangAuthenticationFactory;
+import net.teamlixo.eggcrack.mojang.MojangAuthenticationService;
 import net.teamlixo.eggcrack.objective.Objective;
 import net.teamlixo.eggcrack.objective.ObjectiveCompleted;
 import net.teamlixo.eggcrack.objective.ObjectiveRequests;
 import net.teamlixo.eggcrack.objective.ObjectiveTime;
+import net.teamlixo.eggcrack.session.Session;
+import net.teamlixo.eggcrack.session.Tracker;
 import net.teamlixo.eggcrack.ui.UserInterface;
 
 import javax.swing.*;
 import javax.swing.event.HyperlinkEvent;
 import javax.swing.event.HyperlinkListener;
-import javax.swing.plaf.FontUIResource;
 import java.awt.*;
 import java.io.*;
 import java.net.*;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created with IntelliJ IDEA.
- * Date: 8/14/2014
- * Time: 4:46 PM
- */
 public final class Main {
     public static final void main(String[] args) throws
             IOException, ClassNotFoundException, UnsupportedLookAndFeelException,
@@ -55,12 +50,12 @@ public final class Main {
         System.setProperty("java.net.preferIPv4Stack", "true");
 
         //Configure the logger (It's just going to output to console)
-        EggCrack.LOGGER = Logger.getLogger("EggCrack");
+        Session.LOGGER = Logger.getLogger("EggCrack");
         ConsoleHandler consoleHandler = new ConsoleHandler();
         consoleHandler.setFormatter(new LineLogFormatter());
-        EggCrack.LOGGER.addHandler(consoleHandler);
-        EggCrack.LOGGER.setUseParentHandlers(false);
-        EggCrack.LOGGER.setLevel(Level.ALL);
+        Session.LOGGER.addHandler(consoleHandler);
+        Session.LOGGER.setUseParentHandlers(false);
+        Session.LOGGER.setLevel(Level.ALL);
 
         //Read in parameters.
         OptionParser optionsParser = new OptionParser();
@@ -91,7 +86,7 @@ public final class Main {
 
         if (optionSet.has(debugArgument)) {
             consoleHandler.setLevel(Level.FINEST);
-            EggCrack.LOGGER.fine("Console debugging enabled.");
+            Session.LOGGER.fine("Console debugging enabled.");
         } else consoleHandler.setLevel(Level.INFO);
 
         File file = new File((String) optionSet.valueOf(configArgument));
@@ -108,14 +103,14 @@ public final class Main {
         boolean guiEnabled = !optionSet.has(consoleArgument);
 
         if (configuration.isUpdateEnabled() && (branch.equals("beta") || branch.equals("stable"))) {
-            EggCrack.LOGGER.fine("Checking for updates to build #" + version + " on branch " +  branch + "...");
+            Session.LOGGER.fine("Checking for updates to build #" + version + " on branch " +  branch + "...");
 
             try {
                 BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(configuration.getUpdateURL().openStream()));
                 int remoteVersion = Integer.parseInt(bufferedReader.readLine());
                 if (remoteVersion > 0 && remoteVersion > version) {
-                    EggCrack.LOGGER.warning("A newer version of EggCrack is available: build #" + remoteVersion + ".");
-                    EggCrack.LOGGER.warning("Download at GitHub: https://github.com/Manevolent/EggCrack");
+                    Session.LOGGER.warning("A newer version of EggCrack is available: build #" + remoteVersion + ".");
+                    Session.LOGGER.warning("Download at GitHub: https://github.com/Manevolent/EggCrack");
 
                     if (guiEnabled) {
                         JLabel label = new JLabel();
@@ -151,10 +146,10 @@ public final class Main {
                         JOptionPane.showMessageDialog(null, ep);
                     }
                 } else {
-                    EggCrack.LOGGER.fine("Update check complete; no new versions found.");
+                    Session.LOGGER.fine("Update check complete; no new versions found.");
                 }
             } catch (Exception ex) {
-                EggCrack.LOGGER.warning("Problem retrieving updates from the repository:");
+                Session.LOGGER.warning("Problem retrieving updates from the repository:");
                 ex.printStackTrace();
             }
         }
@@ -163,7 +158,7 @@ public final class Main {
             if (!guiAvailable)
                 throw new UnsupportedOperationException("Desktop environment not supported on this system.");
 
-            EggCrack.LOGGER.info("Skipping console arguments and launching in GUI-mode...");
+            Session.LOGGER.info("Skipping console arguments and launching in GUI-mode...");
 
             UserInterface.main(args);
             return;
@@ -184,8 +179,8 @@ public final class Main {
             }
         }
 
-        EggCrack.LOGGER.fine("[Options] threads=" + threads);
-        EggCrack.LOGGER.fine("[Options] interval=" + interval + " requests/sec");
+        Session.LOGGER.fine("[Options] threads=" + threads);
+        Session.LOGGER.fine("[Options] interval=" + interval + " requests/sec");
 
         ExtendedList<Objective> objectiveList = new ExtendedArrayList<Objective>();
         if (optionSet.has(completedObjectiveArgument))
@@ -196,9 +191,9 @@ public final class Main {
             objectiveList.add(new ObjectiveRequests((Integer) optionSet.valueOf(requestObjectiveArgument)));
 
         if (objectiveList.size() <= 0) {
-            EggCrack.LOGGER.warning("No objectives provided! Session will continue until all accounts are attempted.");
+            Session.LOGGER.warning("No objectives provided! Session will continue until all accounts are attempted.");
         } else {
-            EggCrack.LOGGER.fine("[Options] objectives=" + objectiveList.size());
+            Session.LOGGER.fine("[Options] objectives=" + objectiveList.size());
         }
 
         ExtendedList<AccountOutput> outputList = new ExtendedArrayList<AccountOutput>();
@@ -208,9 +203,9 @@ public final class Main {
             outputList.add(new UrlAccountOutput(URI.create(optionSet.valueOf(urlOutputArgument).toString()).toURL()));
 
         if (outputList.size() <= 0) {
-            EggCrack.LOGGER.warning("No outputs provided! Recovered accounts will not be saved.");
+            Session.LOGGER.warning("No outputs provided! Recovered accounts will not be saved.");
         } else {
-            EggCrack.LOGGER.fine("[Options] outputs=" + outputList.size());
+            Session.LOGGER.fine("[Options] outputs=" + outputList.size());
         }
 
         if (optionSet.has(logFileArgument)) {
@@ -227,19 +222,19 @@ public final class Main {
                 } else if (level.equalsIgnoreCase("severe")) {
                     fileHandler.setLevel(Level.SEVERE);
                 } else {
-                    EggCrack.LOGGER.severe("Unknown log level (info/warn/severe): " + level.toLowerCase() + ".");
+                    Session.LOGGER.severe("Unknown log level (info/warn/severe): " + level.toLowerCase() + ".");
                     return;
                 }
 
-                EggCrack.LOGGER.info("Logging enabled; appending " + level.toUpperCase() + " entries to " + (new File(optionSet.valueOf(logFileArgument).toString())).getAbsolutePath());
-                EggCrack.LOGGER.addHandler(fileHandler);
+                Session.LOGGER.info("Logging enabled; appending " + level.toUpperCase() + " entries to " + (new File(optionSet.valueOf(logFileArgument).toString())).getAbsolutePath());
+                Session.LOGGER.addHandler(fileHandler);
             } catch (IOException e) {
                 e.printStackTrace();
                 return;
             }
         }
 
-        EggCrack.LOGGER.info("Starting EggCrack at " + Calendar.getInstance().getTime().toString() + "...");
+        Session.LOGGER.info("Starting EggCrack at " + Calendar.getInstance().getTime().toString() + "...");
 
         //Set up the executor service responsible for executing threads.
         ExecutorService executorService = Executors.newFixedThreadPool(
@@ -250,11 +245,7 @@ public final class Main {
         Tracker tracker = new Tracker();
 
         //Set up the Minecraft authentication service responsible for authenticating accounts.
-        AuthenticationService authenticationService = new MinecraftAuthenticationService(
-                new MinecraftAuthenticationFactory(),
-                interval,
-                tracker
-        );
+        AuthenticationService authenticationService = new MojangAuthenticationService();
 
         //Import accounts from file.
         ExtendedList<Account> accountList = new ExtendedArrayList<Account>();
@@ -263,7 +254,7 @@ public final class Main {
         while (usernameReader.ready())
             accountList.add(new MinecraftAccount(usernameReader.readLine().trim()));
         usernameReader.close();
-        EggCrack.LOGGER.info("Loaded " + accountList.size() + " accounts (" + usernameFile.getAbsolutePath() + ").");
+        Session.LOGGER.info("Loaded " + accountList.size() + " accounts (" + usernameFile.getAbsolutePath() + ").");
 
         //Import credentials from file.
         ExtendedList<Credential> credentialList = new ExtendedArrayList<Credential>();
@@ -272,7 +263,7 @@ public final class Main {
         while (passwordReader.ready())
             credentialList.add(Credentials.createPassword(passwordReader.readLine().trim()));
         passwordReader.close();
-        EggCrack.LOGGER.info("Loaded " + credentialList.size() + " passwords (" + passwordFile.getAbsolutePath() + ").");
+        Session.LOGGER.info("Loaded " + credentialList.size() + " passwords (" + passwordFile.getAbsolutePath() + ").");
 
         //Import proxies from file.
         ExtendedList<Proxy> proxyList = new ExtendedArrayList<Proxy>();
@@ -283,14 +274,14 @@ public final class Main {
             try {
                 proxyList.add(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyLine[0], Integer.parseInt(proxyLine[1]))));
             } catch (Exception ex) {
-                EggCrack.LOGGER.warning("Problem loading proxy: " + ex.getMessage());
+                Session.LOGGER.warning("Problem loading proxy: " + ex.getMessage());
             }
         }
         proxyReader.close();
-        EggCrack.LOGGER.info("Loaded " + proxyList.size() + " proxies (" + proxyFile.getAbsolutePath() + ").");
+        Session.LOGGER.info("Loaded " + proxyList.size() + " proxies (" + proxyFile.getAbsolutePath() + ").");
 
         //Initialize the EggCrack instance to create a credential store.
-        final EggCrack eggCrack = new EggCrack(
+        final Session session = new Session(
                 executorService,
                 authenticationService,
                 accountList,
@@ -303,6 +294,6 @@ public final class Main {
         );
 
         //Run EggCrack.
-        eggCrack.run();
+        session.run();
     }
 }

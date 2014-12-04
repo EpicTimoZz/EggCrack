@@ -1,6 +1,7 @@
 package net.teamlixo.eggcrack.credential.password;
 
 import net.teamlixo.eggcrack.account.Account;
+import net.teamlixo.eggcrack.authentication.AbstractAuthenticationService;
 import net.teamlixo.eggcrack.authentication.AuthenticationException;
 import net.teamlixo.eggcrack.authentication.AuthenticationService;
 import net.teamlixo.eggcrack.credential.Credential;
@@ -10,7 +11,11 @@ import java.net.Proxy;
 /**
  * Extends the AuthenticationService class and provides password authentication to the system.
  */
-public abstract class PasswordAuthenticationService implements AuthenticationService {
+public abstract class PasswordAuthenticationService extends AbstractAuthenticationService {
+    public PasswordAuthenticationService(String name) {
+        super(name);
+    }
+
     @Override
     public boolean authenticate(Account account, Credential credential, Proxy proxy) throws AuthenticationException {
         if (!(credential instanceof PasswordCredential))

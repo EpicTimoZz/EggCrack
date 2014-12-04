@@ -9,6 +9,13 @@ import java.net.Proxy;
  * Internal authentication service interface.
  */
 public interface AuthenticationService {
+
+    /**
+     * Gets the friendly name for this authentication service.
+     * @return Authentication service name.
+     */
+    public String getName();
+
     /**
      * Authenticates an account with a password.
      * @param account Account to authenticate.
@@ -17,4 +24,5 @@ public interface AuthenticationService {
      * @return true if authentication was successful, false otherwise.
      */
     public boolean authenticate(Account account, Credential credential, Proxy proxy) throws AuthenticationException;
+
 }

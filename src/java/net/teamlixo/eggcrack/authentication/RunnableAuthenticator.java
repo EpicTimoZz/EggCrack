@@ -1,9 +1,10 @@
 package net.teamlixo.eggcrack.authentication;
 
-import net.teamlixo.eggcrack.EggCrack;
+import net.teamlixo.eggcrack.session.Session;
 import net.teamlixo.eggcrack.account.Account;
 import net.teamlixo.eggcrack.account.AccountListener;
 import net.teamlixo.eggcrack.credential.Credential;
+import net.teamlixo.eggcrack.session.Tracker;
 
 import java.net.Proxy;
 import java.util.Iterator;
@@ -20,9 +21,11 @@ public class RunnableAuthenticator implements Runnable {
     private Iterator<Credential> credentialIterator;
     private Iterator<Proxy> proxyIterator;
     private AuthenticationCallback authenticationCallback;
+    private Tracker tracker;
 
     public RunnableAuthenticator(AuthenticationService authenticationService,
                                  Account account,
+                                 Tracker tracker,
                                  Iterator<Credential> credentialIterator,
                                  Iterator<Proxy> proxyIterator,
                                  AuthenticationCallback authenticationCallback) {
@@ -37,33 +40,46 @@ public class RunnableAuthenticator implements Runnable {
     public void run() {
         Thread.currentThread().setName("Authenticator-" + account.getUsername());
 
-        Credential credential = credentialIterator.next();
+        Credential credential = null;
         AccountListener accountListener = account.getListener();
-        if (accountListener != null) accountListener.onAccountStarted();
+        if (accountListener != null) accountListener.onAccountStarted(account);
 
         while (proxyIterator.hasNext()) {
             try {
-                if (credential == null)
+                if (credential == null) {
+                    if (accountListener != null) accountListener.onAccountTried(account, credential);
                     credential = credentialIterator.next();
+                    synchronized (tracker) {
+                        tracker.setAttempts(tracker.getAttempts() + 1);
+                    }
+                }
 
-                EggCrack.LOGGER.finest("[Account: " + account.getUsername() +
+                Session.LOGGER.finest("[Account: " + account.getUsername() +
                         "] Sending authentication request [password=" + credential.toString() + "]...");
 
-                if (accountListener != null) accountListener.onAccountAttempting(credential);
+                if (accountListener != null) accountListener.onAccountAttempting(account, credential);
 
                 try {
                     if (authenticationService.authenticate(account, credential, proxyIterator.next())) {
                         authenticationCallback.onAuthenticationCompleted(account, credential);
-                        if (accountListener != null) accountListener.onAccountCompleted(credential);
+                        if (accountListener != null) accountListener.onAccountCompleted(account, credential);
                         return;
                     } else {
+                        if (accountListener != null) accountListener.onAccountTried(account, credential);
                         credential = credentialIterator.next();
+                        synchronized (tracker) {
+                            tracker.setAttempts(tracker.getAttempts() + 1);
+                        }
                     }
                 } catch (AuthenticationException exception) {
                     if (exception.getFailure().getAction() == AuthenticationException.AuthenticationAction.STOP) {
-                        EggCrack.LOGGER.warning("Stopping session for " + account.getUsername() + ": " + exception.getMessage());
+                        Session.LOGGER.warning("Stopping session for " + account.getUsername() + ": " + exception.getMessage());
                         break;
                     } else if (exception.getFailure().getAction() == AuthenticationException.AuthenticationAction.NEXT_CREDENTIALS) {
+                        if (accountListener != null) accountListener.onAccountTried(account, credential);
+                        synchronized (tracker) {
+                            tracker.setAttempts(tracker.getAttempts() + 1);
+                        }
                         credential = credentialIterator.next();
                     }
                 }
@@ -74,7 +90,7 @@ public class RunnableAuthenticator implements Runnable {
             }
         }
 
-        if (accountListener != null) accountListener.onAccountFailed();
+        if (accountListener != null) accountListener.onAccountFailed(account );
         authenticationCallback.onAuthenticationFailed(account);
     }
 }

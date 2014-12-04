@@ -1,9 +1,13 @@
 package net.teamlixo.eggcrack.ui;
 
 import net.teamlixo.eggcrack.AuthenticatorThreadFactory;
-import net.teamlixo.eggcrack.EggCrack;
-import net.teamlixo.eggcrack.Tracker;
+import net.teamlixo.eggcrack.mojang.MojangAuthenticationFactory;
+import net.teamlixo.eggcrack.mojang.MojangAuthenticationService;
+import net.teamlixo.eggcrack.session.Session;
+import net.teamlixo.eggcrack.session.SessionListener;
+import net.teamlixo.eggcrack.session.Tracker;
 import net.teamlixo.eggcrack.account.Account;
+import net.teamlixo.eggcrack.account.AccountListener;
 import net.teamlixo.eggcrack.account.output.AccountOutput;
 import net.teamlixo.eggcrack.account.output.FileAccountOutput;
 import net.teamlixo.eggcrack.account.output.UrlAccountOutput;
@@ -13,9 +17,7 @@ import net.teamlixo.eggcrack.credential.Credential;
 import net.teamlixo.eggcrack.credential.Credentials;
 import net.teamlixo.eggcrack.list.ExtendedList;
 import net.teamlixo.eggcrack.list.array.ExtendedArrayList;
-import net.teamlixo.eggcrack.minecraft.MinecraftAccount;
-import net.teamlixo.eggcrack.minecraft.MinecraftAuthenticationFactory;
-import net.teamlixo.eggcrack.minecraft.MinecraftAuthenticationService;
+import net.teamlixo.eggcrack.mojang.MinecraftAccount;
 import net.teamlixo.eggcrack.objective.Objective;
 
 import javax.swing.*;
@@ -30,7 +32,7 @@ import java.net.URI;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class UserInterface extends JDialog {
+public class UserInterface extends JDialog implements AccountListener, SessionListener {
     private JPanel contentPane;
     private JSpinner maxthreads;
     private JTable table1;
@@ -93,13 +95,15 @@ public class UserInterface extends JDialog {
         proxyTimeout.setVisible(false);
         checkLbl.setVisible(false);
 
-        String[] columnNames = {"Username",
+        String[] columnNames = {
+                "Username",
                 "Password",
                 "Requests",
                 "Status"};
 
         table1.setRowHeight(35);
         table1.setModel(new DefaultTableModel(columnNames, 0));
+        final AccountListener accountListener = this;
         start.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -112,8 +116,8 @@ public class UserInterface extends JDialog {
                 Tracker tracker = new Tracker();
 
                 //Set up the Minecraft authentication service responsible for authenticating accounts.
-                AuthenticationService authenticationService = new MinecraftAuthenticationService(
-                        new MinecraftAuthenticationFactory(),
+                AuthenticationService authenticationService = new MojangAuthenticationService(
+                        new MojangAuthenticationFactory(),
                         60,
                         tracker
                 );
@@ -135,10 +139,13 @@ public class UserInterface extends JDialog {
                 try {
                     File usernameFile = new File(usernamesFile.getText());
                     BufferedReader usernameReader = new BufferedReader(new FileReader(usernameFile));
-                    while (usernameReader.ready())
-                        accountList.add(new MinecraftAccount(usernameReader.readLine().trim()));
+                    while (usernameReader.ready()) {
+                        Account account = new MinecraftAccount(usernameReader.readLine().trim());
+                        account.setListener(accountListener);
+                        accountList.add(account);
+                    }
                     usernameReader.close();
-                    EggCrack.LOGGER.info("Loaded " + accountList.size() + " accounts (" + usernameFile.getAbsolutePath() + ").");
+                    Session.LOGGER.info("Loaded " + accountList.size() + " accounts (" + usernameFile.getAbsolutePath() + ").");
                 } catch (FileNotFoundException ex) {
                     JOptionPane.showMessageDialog(null, "Username file not found.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
@@ -155,7 +162,7 @@ public class UserInterface extends JDialog {
                     while (passwordReader.ready())
                         credentialList.add(Credentials.createPassword(passwordReader.readLine().trim()));
                     passwordReader.close();
-                    EggCrack.LOGGER.info("Loaded " + credentialList.size() + " passwords (" + passwordFile.getAbsolutePath() + ").");
+                    Session.LOGGER.info("Loaded " + credentialList.size() + " passwords (" + passwordFile.getAbsolutePath() + ").");
                 } catch (FileNotFoundException ex) {
                     JOptionPane.showMessageDialog(null, "Password file not found.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
@@ -175,11 +182,11 @@ public class UserInterface extends JDialog {
                             try {
                                 proxyList.add(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyLine[0], Integer.parseInt(proxyLine[1]))));
                             } catch (Exception ex) {
-                                EggCrack.LOGGER.warning("Problem loading proxy: " + ex.getMessage());
+                                Session.LOGGER.warning("Problem loading proxy: " + ex.getMessage());
                             }
                         }
                         proxyReader.close();
-                        EggCrack.LOGGER.info("Loaded " + proxyList.size() + " HTTP proxies (" + proxyFile.getAbsolutePath() + ").");
+                        Session.LOGGER.info("Loaded " + proxyList.size() + " HTTP proxies (" + proxyFile.getAbsolutePath() + ").");
                     }
                 } catch (FileNotFoundException ex) {
                     JOptionPane.showMessageDialog(null, "HTTP proxy file not found.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -197,11 +204,11 @@ public class UserInterface extends JDialog {
                             try {
                                 proxyList.add(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyLine[0], Integer.parseInt(proxyLine[1]))));
                             } catch (Exception ex) {
-                                EggCrack.LOGGER.warning("Problem loading proxy: " + ex.getMessage());
+                                Session.LOGGER.warning("Problem loading proxy: " + ex.getMessage());
                             }
                         }
                         proxyReader.close();
-                        EggCrack.LOGGER.info("Loaded " + proxyList.size() + " SOCKS proxies (" + proxyFile.getAbsolutePath() + ").");
+                        Session.LOGGER.info("Loaded " + proxyList.size() + " SOCKS proxies (" + proxyFile.getAbsolutePath() + ").");
                     }
                 } catch (FileNotFoundException ex) {
                     JOptionPane.showMessageDialog(null, "SOCKS proxy file not found.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -227,7 +234,7 @@ public class UserInterface extends JDialog {
                 }
 
                 try {
-                    EggCrack eggCrack = new EggCrack(
+                    Session session = new Session(
                             executorService,
                             authenticationService,
                             accountList,
@@ -239,7 +246,7 @@ public class UserInterface extends JDialog {
                             checkProxies.isSelected() ? URI.create("http://google.com/").toURL() : null
                     );
 
-                    Thread thread = new Thread(eggCrack);
+                    Thread thread = new Thread(session);
                     thread.setDaemon(true);
                     thread.start();
                 } catch (MalformedURLException e1) {
@@ -374,5 +381,134 @@ public class UserInterface extends JDialog {
 
     private void createUIComponents() {
 
+    }
+
+    @Override
+    public void onAccountStarted(Account account) {
+        ensureRow(account);
+    }
+
+    @Override
+    public void onAccountFailed(Account account) {
+        getRow(account).remove();
+    }
+
+    @Override
+    public void onAccountAttempting(Account account, Credential credential) {
+        Row row = getRow(account);
+        row.setRequests(row.getRequests() + 1);
+        getRow(account).setStatus("Trying " + credential.toString() + "...");
+    }
+
+    @Override
+    public void onAccountCompleted(Account account, Credential credential) {
+        getRow(account).setStatus("<html><b><font color=\"green\">Cracked</font></b></html>");
+    }
+
+    private DefaultTableModel getTableModel() {
+        return (DefaultTableModel) table1.getModel();
+    }
+
+    private Row getRow(Account account) {
+        for (int i = 0; i < table1.getModel().getRowCount(); i++) {
+            if (getTableModel().getValueAt(0, i).toString().equals(account.getUsername()))
+                return new Row(i);
+        }
+
+        return null;
+    }
+
+    private boolean hasRow(Account account) {
+        return getRow(account) != null;
+    }
+
+    private Row getRow(int index) {
+        if (getTableModel().getRowCount() > index)
+            return new Row(index);
+        else return null;
+    }
+
+    private void clearRows() {
+        Row row = null;
+        while ((row = getRow(0)) != null) row.remove();
+    }
+
+    private Row ensureRow(Account account) {
+        Row row = getRow(account);
+        if (row == null) {
+            getTableModel().addRow(new Object[]{account.getUsername(), "-", 0, "Initializing..."});
+            return getRow(account);
+        } else
+            return row;
+    }
+
+    @Override
+    public void started() {
+        this.tabs.setSelectedIndex(1);
+        clearRows();
+    }
+
+    @Override
+    public void update(float progress, Tracker tracker) {
+        this.progress.setValue((int) ((float)this.progress.getMaximum() * progress));
+
+        this.attemptcnt.setText(String.valueOf(tracker.getAttempts()));
+        this.crackedcnt.setText(String.valueOf(tracker.getCompleted() + "/" + (tracker.getTotal() - tracker.getFailed())));
+        this.failedcnt.setText(String.valueOf(tracker.getFailed()) + "/" + tracker.getTotal());
+    }
+
+    @Override
+    public void completed() {
+        this.tabs.setSelectedIndex(1);
+        JOptionPane.showMessageDialog(this, "Cracking completed.", "EggCrack", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    private class Row {
+        private int rowIndex;
+
+        public Row(int rowIndex) {
+            this.rowIndex = rowIndex;
+        }
+
+        public int getRowIndex() {
+            return rowIndex;
+        }
+
+        public void setPassword(String password) {
+            synchronized (table1) {
+                getTableModel().setValueAt(password, rowIndex, 1);
+                sort();
+            }
+        }
+
+        public int getRequests() {
+            synchronized (table1) {
+                return (int) getTableModel().getValueAt(rowIndex, 2);
+            }
+        }
+
+        public void setRequests(int requests) {
+            synchronized (table1) {
+                getTableModel().setValueAt(requests, rowIndex, 2);
+                sort();
+            }
+        }
+
+        public void setStatus(String status) {
+            synchronized (table1) {
+                getTableModel().setValueAt(status, rowIndex, 3);
+                sort();
+            }
+        }
+
+        public void remove() {
+            synchronized (table1) {
+                getTableModel().removeRow(rowIndex);
+            }
+        }
+
+        public void sort() {
+            getTableModel().moveRow(rowIndex, rowIndex, getTableModel().getRowCount() - 1);
+        }
     }
 }

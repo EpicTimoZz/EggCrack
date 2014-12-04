@@ -1,6 +1,6 @@
 package net.teamlixo.eggcrack.objective;
 
-import net.teamlixo.eggcrack.Tracker;
+import net.teamlixo.eggcrack.session.Tracker;
 
 public class ObjectiveTime extends Objective {
     private long maximumSeconds;

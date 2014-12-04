@@ -1,8 +1,8 @@
-package net.teamlixo.eggcrack.minecraft;
+package net.teamlixo.eggcrack.mojang;
 
+import com.mojang.authlib.Agent;
 import com.mojang.authlib.UserAuthentication;
-import net.teamlixo.eggcrack.EggCrack;
-import net.teamlixo.eggcrack.Tracker;
+import net.teamlixo.eggcrack.session.Session;
 import net.teamlixo.eggcrack.account.Account;
 import net.teamlixo.eggcrack.authentication.AuthenticationException;
 import net.teamlixo.eggcrack.credential.password.PasswordAuthenticationService;
@@ -12,7 +12,6 @@ import net.teamlixo.eggcrack.timer.Timer;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -20,7 +19,7 @@ import java.util.NoSuchElementException;
 /**
  * Lowest-level functionality of EggCrack; all requests are created and managed here.
  */
-public class MinecraftAuthenticationService extends PasswordAuthenticationService {
+public class MojangAuthenticationService extends PasswordAuthenticationService {
     private static final int MINIMUM_PASSWORD_LEGTH = 6;
     private static final InetAddress LOCAL_ADDRESS = InetAddress.getLoopbackAddress();
 
@@ -32,15 +31,17 @@ public class MinecraftAuthenticationService extends PasswordAuthenticationServic
     /**
      * Interval each proxy may send requests at, in seconds.
      */
-    private float interval;
+    private float interval = 0.005F;
     private final Map<InetAddress, Timer> intervalMap = new HashMap<InetAddress, Timer>();
 
-    private final Tracker tracker;
+    public MojangAuthenticationService() {
+        super("Yggdrasil Authentication");
+        this.authenticationFactory = new MojangAuthenticationFactory(Agent.MINECRAFT);
+    }
 
-    public MinecraftAuthenticationService(AuthenticationFactory authenticationFactory, float interval, Tracker tracker) {
+    public MojangAuthenticationService(String name, AuthenticationFactory authenticationFactory) {
+        super(name);
         this.authenticationFactory = authenticationFactory;
-        this.interval = interval;
-        this.tracker = tracker;
     }
 
     @Override
@@ -56,12 +57,8 @@ public class MinecraftAuthenticationService extends PasswordAuthenticationServic
         if (username == null)
             return false;
 
-        if (password == null) {
-            synchronized (tracker) {
-                tracker.setAttempts(tracker.getAttempts() + 1);
-            }
+        if (password == null)
             return false;
-        }
 
         //Step 1: Check username and password for possible corruptions.
 
@@ -74,12 +71,8 @@ public class MinecraftAuthenticationService extends PasswordAuthenticationServic
         password = password.replace("\n", "").replace("\r", "").trim();
 
         //Make sure the password isn't too short.
-        if (password.length() < MINIMUM_PASSWORD_LEGTH) {
-            synchronized (tracker) {
-                tracker.setAttempts(tracker.getAttempts() + 1);
-            }
+        if (password.length() < MINIMUM_PASSWORD_LEGTH)
             return false;
-        }
 
         //Step 2: Check proxy for rate-limiting.
 
@@ -96,7 +89,7 @@ public class MinecraftAuthenticationService extends PasswordAuthenticationServic
         if (!timer.isReady())
             throw new AuthenticationException(AuthenticationException.AuthenticationFailure.BAD_PROXY);
 
-        EggCrack.LOGGER.finer("[Authentication] " + username + ": using proxy [type=" + proxy.type().name() + ",address=" + proxyAddress + "].");
+        Session.LOGGER.finer("[Authentication] " + username + ": using proxy [type=" + proxy.type().name() + ",address=" + proxyAddress + "].");
 
         //Step 3: Attempt to authenticate the user using the username and password.
 
@@ -105,11 +98,7 @@ public class MinecraftAuthenticationService extends PasswordAuthenticationServic
         userAuthentication.setPassword(password);
 
         try {
-            synchronized (tracker) { //Synchronize around the tracker to avoid async collisions.
-                tracker.setRequests(tracker.getRequests() + 1);
-            }
-
-            EggCrack.LOGGER.fine("[Authentication] Trying [username=" + username + ", password=" + password + "].");
+            Session.LOGGER.fine("[Authentication] Trying [username=" + username + ", password=" + password + "].");
 
             userAuthentication.logIn();
             timer.next();
@@ -121,14 +110,10 @@ public class MinecraftAuthenticationService extends PasswordAuthenticationServic
             timer.next();
             String errorMessage = e.getMessage();
 
-            EggCrack.LOGGER.finer("[Authentication] Attempt [username=" + username + ", password=" + password + "] failed: " + e.getMessage());
+            Session.LOGGER.finer("[Authentication] Attempt [username=" + username + ", password=" + password + "] failed: " + e.getMessage());
 
             if (errorMessage.equals("Invalid credentials. Invalid username or password.")) {
                 //Username or password is not correct.
-                synchronized (tracker) {
-                    tracker.setAttempts(tracker.getAttempts() + 1);
-                }
-                
                 throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INCORRECT_CREDENTIAL);
             } else if (errorMessage.equals("Invalid credentials.")) {
                 throw new AuthenticationException(AuthenticationException.AuthenticationFailure.REJECTED);
@@ -137,7 +122,7 @@ public class MinecraftAuthenticationService extends PasswordAuthenticationServic
             } else if (errorMessage.equals("Invalid credentials. Account migrated, use e-mail as username.")) {
                 throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT);
             } else {
-                EggCrack.LOGGER.warning("[Authentication] Unexpected response: " + e.getMessage());
+                Session.LOGGER.warning("[Authentication] Unexpected response: " + e.getMessage());
                 throw new AuthenticationException(AuthenticationException.AuthenticationFailure.REJECTED);
             }
         } catch (NoSuchElementException exception) {
