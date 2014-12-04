@@ -92,9 +92,37 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jdk.version>1.7</jdk.version>
     </properties>
 
     <build>
+        <finalName>EggCrack</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>${jdk.version}</source>
+                    <target>${jdk.version}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <outputDirectory>${basedir}/release/bin/</outputDirectory>
+                    <excludes>
+                        <exclude>**/log4j.properties</exclude>
+                    </excludes>
+                    <archive>
+                        <manifest>
+                            <mainClass>net.teamlixo.eggcrack.Main</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
 
+        </plugins>
     </build>
 </project>
