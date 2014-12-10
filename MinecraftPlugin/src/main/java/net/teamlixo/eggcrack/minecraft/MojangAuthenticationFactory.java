@@ -1,4 +1,4 @@
-package net.teamlixo.eggcrack.mojang;
+package net.teamlixo.eggcrack.minecraft;
 
 import com.mojang.authlib.Agent;
 import com.mojang.authlib.UserAuthentication;

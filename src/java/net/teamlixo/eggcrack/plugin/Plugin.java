@@ -1,5 +1,12 @@
 package net.teamlixo.eggcrack.plugin;
 
+import net.teamlixo.eggcrack.EggCrack;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Map;
+import java.util.logging.Logger;
+
 /**
  * Base plugin class.
  */
@@ -10,13 +17,16 @@ public abstract class Plugin {
      * Sets the enabled status of the plugin.
      * @param enabled Plugin enable status.
      */
-    public final void setEnabled(boolean enabled) {
+    public final void setEnabled(boolean enabled) throws PluginLoadException {
         if (this.enabled != enabled) {
             this.enabled = enabled;
-            if (enabled)
+            if (enabled) {
+                EggCrack.LOGGER.info("Enabling " + getName() + " version " + getVersion() + ".");
                 onEnable();
-            else
+            } else {
+                EggCrack.LOGGER.info("Disabling " + getName() + ".");
                 onDisable();
+            }
         }
     }
 
@@ -30,16 +40,22 @@ public abstract class Plugin {
      * Gets the plugin version.
      * @return plugin version.
      */
-    public abstract String getVersion();
+    public abstract int getVersion();
+
+    /**
+     * Gets a map of properties provided by the plugin configuration.
+     * @return plugin properties.
+     */
+    public abstract Map<String, String> getProperties() throws IOException;
 
     /**
      * Called when the plugin enables.
      */
-    public abstract void onEnable();
+    public abstract void onEnable() throws PluginLoadException;
 
     /**
      * Called when the plugin disables.
      */
-    public abstract void onDisable();
+    public abstract void onDisable() throws PluginLoadException;
 
 }

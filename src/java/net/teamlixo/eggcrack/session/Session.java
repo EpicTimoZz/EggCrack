@@ -1,5 +1,6 @@
 package net.teamlixo.eggcrack.session;
 
+import net.teamlixo.eggcrack.EggCrack;
 import net.teamlixo.eggcrack.account.Account;
 import net.teamlixo.eggcrack.account.output.AccountOutput;
 import net.teamlixo.eggcrack.authentication.AuthenticationCallback;
@@ -21,8 +22,6 @@ import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
 public class Session implements Runnable, AuthenticationCallback, ProxyCallback {
-    public static Logger LOGGER;
-
     private final ExecutorService executorService;
     private final AuthenticationService authenticationService;
 
@@ -76,7 +75,7 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
 
         Iterator<Proxy> proxyIterator = proxyList.iterator(false);
         if (checkUrl != null) {
-            Session.LOGGER.info("Checking proxies with URL \"" + checkUrl.toString() + "\"...");
+            EggCrack.LOGGER.info("Checking proxies with URL \"" + checkUrl.toString() + "\"...");
             long start = System.currentTimeMillis();
 
             synchronized (proxyList) {
@@ -99,18 +98,18 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
                 public boolean run(float progress) {
                     if (System.currentTimeMillis() > lastSecond + 1000) {
                         lastSecond = System.currentTimeMillis();
-                        LOGGER.info((int) Math.floor(progress * 100f) + "% complete.");
+                        EggCrack.LOGGER.info((int) Math.floor(progress * 100f) + "% complete.");
                     }
 
                     return true;
                 }
             });
 
-            Session.LOGGER.info("Proxy check completed successfully in " +
+            EggCrack.LOGGER.info("Proxy check completed successfully in " +
                     (System.currentTimeMillis() - start) + "ms. Proxies available: " + proxyList.size() + ".");
         }
 
-        Session.LOGGER.info("Startup complete; initiating session...");
+        EggCrack.LOGGER.info("Startup complete; initiating session...");
 
         if (sessionListener != null) sessionListener.started();
 
@@ -123,6 +122,7 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
                             new RunnableAuthenticator(
                                     authenticationService,
                                     accountIterator.next(),
+                                    tracker,
                                     credentialList.iterator(false),
                                     proxyIterator,
                                     this
@@ -143,7 +143,7 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
 
                     if (sessionListener != null) sessionListener.update(progress, tracker);
 
-                    LOGGER.info((Math.floor(Math.max(progress * 1000f, ((float)tracker.getAttempts() / (float)totalAttempts) * 1000f)) / 10f) + "% complete (" +
+                    EggCrack.LOGGER.info((Math.floor(Math.max(progress * 1000f, ((float)tracker.getAttempts() / (float)totalAttempts) * 1000f)) / 10f) + "% complete (" +
                             tracker.getCompleted() + "/" + (accountList.size() - tracker.getFailed()) + ") | Attempts: " +
                             tracker.getAttempts() + " (" + (tracker.getAttempts() - attemptsLastSecond) +  " of " +
                             (tracker.getRequests() - requestsLastSecond) + " requests)");
@@ -157,7 +157,7 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
                     Objective objective = objectiveIterator.next();
                     if (objective.check(tracker)) {
                         //Shutdown
-                        Session.LOGGER.info(objective.getClass().getSimpleName() + " was met; ending session.");
+                        EggCrack.LOGGER.info(objective.getClass().getSimpleName() + " was met; ending session.");
                         return false; //Break.
                     }
                 }
@@ -174,16 +174,16 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
 
         if (sessionListener != null) sessionListener.completed();
 
-        Session.LOGGER.info("Session complete. Runtime: " + (tracker.elapsedMilliseconds() / 1000f) + " seconds.");
-        Session.LOGGER.info(" Total requests: " + tracker.getRequests());
-        Session.LOGGER.info(" Attempts: " + tracker.getAttempts() + " (" + (Math.floor(((float) tracker.getAttempts() / (float) tracker.getRequests()) * 1000f) / 10f) + "%)");
-        Session.LOGGER.info(" Accounts completed: " + tracker.getCompleted());
-        Session.LOGGER.info(" Accounts failed: " + tracker.getFailed());
+        EggCrack.LOGGER.info("Session complete. Runtime: " + (tracker.elapsedMilliseconds() / 1000f) + " seconds.");
+        EggCrack.LOGGER.info(" Total requests: " + tracker.getRequests());
+        EggCrack.LOGGER.info(" Attempts: " + tracker.getAttempts() + " (" + (Math.floor(((float) tracker.getAttempts() / (float) tracker.getRequests()) * 1000f) / 10f) + "%)");
+        EggCrack.LOGGER.info(" Accounts completed: " + tracker.getCompleted());
+        EggCrack.LOGGER.info(" Accounts failed: " + tracker.getFailed());
     }
 
     @Override
     public void onAuthenticationCompleted(Account account, Credential credential) {
-        Session.LOGGER.info("Account successfully recovered: " + account.getUsername());
+        EggCrack.LOGGER.info("Account successfully recovered: " + account.getUsername());
 
         Iterator<AccountOutput> accountOutputIterator = outputList.iterator(false);
         while (accountOutputIterator.hasNext()) {
@@ -191,7 +191,7 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
             try {
                 accountOutput.save(account, credential);
             } catch (IOException e) {
-                Session.LOGGER.severe("Failed to save credentials for " + account.getUsername() +
+                EggCrack.LOGGER.severe("Failed to save credentials for " + account.getUsername() +
                         " (" + accountOutput.getClass().getSimpleName() + "): " + e.getMessage());
             }
         }

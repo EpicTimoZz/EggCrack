@@ -1,5 +1,6 @@
 package net.teamlixo.eggcrack.authentication;
 
+import net.teamlixo.eggcrack.EggCrack;
 import net.teamlixo.eggcrack.session.Session;
 import net.teamlixo.eggcrack.account.Account;
 import net.teamlixo.eggcrack.account.AccountListener;
@@ -54,7 +55,7 @@ public class RunnableAuthenticator implements Runnable {
                     }
                 }
 
-                Session.LOGGER.finest("[Account: " + account.getUsername() +
+                EggCrack.LOGGER.finest("[Account: " + account.getUsername() +
                         "] Sending authentication request [password=" + credential.toString() + "]...");
 
                 if (accountListener != null) accountListener.onAccountAttempting(account, credential);
@@ -73,7 +74,7 @@ public class RunnableAuthenticator implements Runnable {
                     }
                 } catch (AuthenticationException exception) {
                     if (exception.getFailure().getAction() == AuthenticationException.AuthenticationAction.STOP) {
-                        Session.LOGGER.warning("Stopping session for " + account.getUsername() + ": " + exception.getMessage());
+                        EggCrack.LOGGER.warning("Stopping session for " + account.getUsername() + ": " + exception.getMessage());
                         break;
                     } else if (exception.getFailure().getAction() == AuthenticationException.AuthenticationAction.NEXT_CREDENTIALS) {
                         if (accountListener != null) accountListener.onAccountTried(account, credential);

@@ -8,11 +8,19 @@ public abstract class Account {
         this.username = username;
     }
 
-    public void setListener(AccountListener accountListener) {
+    /**
+     * Sets the listener responsible for listening to this account's status.
+     * @param accountListener Account listener.
+     */
+    public final void setListener(AccountListener accountListener) {
         this.accountListener = accountListener;
     }
 
-    public AccountListener getListener() {
+    /**
+     * Gets the account listener responsible for listening to this account's status.
+     * @return Account listener.
+     */
+    public final AccountListener getListener() {
         return accountListener;
     }
 
@@ -20,7 +28,7 @@ public abstract class Account {
      * Gets the account's username.
      * @return Username of the account.
      */
-    public String getUsername() {
+    public final String getUsername() {
         return username;
     }
 }

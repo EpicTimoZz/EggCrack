@@ -1,9 +1,10 @@
-package net.teamlixo.eggcrack.mojang;
+package net.teamlixo.eggcrack.minecraft;
 
 import com.mojang.authlib.Agent;
 import com.mojang.authlib.UserAuthentication;
-import net.teamlixo.eggcrack.session.Session;
+import net.teamlixo.eggcrack.EggCrack;
 import net.teamlixo.eggcrack.account.Account;
+import net.teamlixo.eggcrack.account.output.AttemptedAccount;
 import net.teamlixo.eggcrack.authentication.AuthenticationException;
 import net.teamlixo.eggcrack.credential.password.PasswordAuthenticationService;
 import net.teamlixo.eggcrack.timer.IntervalTimer;
@@ -46,7 +47,7 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
 
     @Override
     protected boolean authenticate(Account account, String password, Proxy proxy) throws AuthenticationException {
-        if (!(account instanceof MinecraftAccount))
+        if (!(account instanceof AttemptedAccount))
             throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT);
 
         return authenticateMinecraft(account.getUsername(), password, proxy);
@@ -75,7 +76,6 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
             return false;
 
         //Step 2: Check proxy for rate-limiting.
-
         InetAddress proxyAddress = proxy.type() == Proxy.Type.DIRECT || proxy.address() == null ?
                 LOCAL_ADDRESS :
                 ((InetSocketAddress)proxy.address()).getAddress();
@@ -89,7 +89,7 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
         if (!timer.isReady())
             throw new AuthenticationException(AuthenticationException.AuthenticationFailure.BAD_PROXY);
 
-        Session.LOGGER.finer("[Authentication] " + username + ": using proxy [type=" + proxy.type().name() + ",address=" + proxyAddress + "].");
+        EggCrack.LOGGER.finer("[Authentication] " + username + ": using proxy [type=" + proxy.type().name() + ",address=" + proxyAddress + "].");
 
         //Step 3: Attempt to authenticate the user using the username and password.
 
@@ -98,19 +98,17 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
         userAuthentication.setPassword(password);
 
         try {
-            Session.LOGGER.fine("[Authentication] Trying [username=" + username + ", password=" + password + "].");
+            EggCrack.LOGGER.fine("[Authentication] Trying [username=" + username + ", password=" + password + "].");
 
             userAuthentication.logIn();
             timer.next();
 
             return userAuthentication.isLoggedIn();
         } catch (com.mojang.authlib.exceptions.AuthenticationException e) {
-            System.out.println(e.getMessage());
-
             timer.next();
             String errorMessage = e.getMessage();
 
-            Session.LOGGER.finer("[Authentication] Attempt [username=" + username + ", password=" + password + "] failed: " + e.getMessage());
+            EggCrack.LOGGER.finer("[Authentication] Attempt [username=" + username + ", password=" + password + "] failed: " + e.getMessage());
 
             if (errorMessage.equals("Invalid credentials. Invalid username or password.")) {
                 //Username or password is not correct.
@@ -122,7 +120,7 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
             } else if (errorMessage.equals("Invalid credentials. Account migrated, use e-mail as username.")) {
                 throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT);
             } else {
-                Session.LOGGER.warning("[Authentication] Unexpected response: " + e.getMessage());
+                EggCrack.LOGGER.warning("[Authentication] Unexpected response: " + e.getMessage());
                 throw new AuthenticationException(AuthenticationException.AuthenticationFailure.REJECTED);
             }
         } catch (NoSuchElementException exception) {

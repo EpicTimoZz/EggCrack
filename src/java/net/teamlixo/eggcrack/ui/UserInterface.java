@@ -1,8 +1,9 @@
 package net.teamlixo.eggcrack.ui;
 
+import com.mojang.authlib.Agent;
 import net.teamlixo.eggcrack.AuthenticatorThreadFactory;
-import net.teamlixo.eggcrack.mojang.MojangAuthenticationFactory;
-import net.teamlixo.eggcrack.mojang.MojangAuthenticationService;
+import net.teamlixo.eggcrack.EggCrack;
+import net.teamlixo.eggcrack.account.output.AttemptedAccount;
 import net.teamlixo.eggcrack.session.Session;
 import net.teamlixo.eggcrack.session.SessionListener;
 import net.teamlixo.eggcrack.session.Tracker;
@@ -17,7 +18,6 @@ import net.teamlixo.eggcrack.credential.Credential;
 import net.teamlixo.eggcrack.credential.Credentials;
 import net.teamlixo.eggcrack.list.ExtendedList;
 import net.teamlixo.eggcrack.list.array.ExtendedArrayList;
-import net.teamlixo.eggcrack.mojang.MinecraftAccount;
 import net.teamlixo.eggcrack.objective.Objective;
 
 import javax.swing.*;
@@ -29,6 +29,8 @@ import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -90,6 +92,14 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
             e.printStackTrace();
         }
 
+        List<AuthenticationService> authenticationServices =
+                new ArrayList<>(EggCrack.getInstance().listAuthenticationServices());
+        String[] authenticationServiceNames = new String[authenticationServices.size()];
+        for (int i = 0; i < authenticationServiceNames.length; i ++)
+            authenticationServiceNames[i] = authenticationServices.get(i).getName();
+
+        api.setModel(new DefaultComboBoxModel(authenticationServiceNames));
+
         maxthreads.setModel(new SpinnerNumberModel(32, 1, 10240000, 2));
         proxyTimeout.setModel(new SpinnerNumberModel(5000, 1, 300000, 1000));
         proxyTimeout.setVisible(false);
@@ -115,12 +125,23 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
 
                 Tracker tracker = new Tracker();
 
-                //Set up the Minecraft authentication service responsible for authenticating accounts.
-                AuthenticationService authenticationService = new MojangAuthenticationService(
-                        new MojangAuthenticationFactory(),
-                        60,
-                        tracker
-                );
+                String method = api.getSelectedItem().toString();
+                AuthenticationService authenticationService = null;
+
+                if (method.length() <= 0) {
+                    JOptionPane.showMessageDialog(null, "Authentication method not specified.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                } else {
+                    for (AuthenticationService thisService : EggCrack.getInstance().listAuthenticationServices()) {
+                        if (thisService.getName().equalsIgnoreCase(method)) {
+                            authenticationService = thisService;
+                            break;
+                        }
+                    }
+                }
+
+                if (authenticationService == null)
+                    JOptionPane.showMessageDialog(null, "Couldn't find authentication method \"" + method + "\".", "Error", JOptionPane.ERROR_MESSAGE);
 
                 ExtendedList<Objective> objectiveList = new ExtendedArrayList<Objective>();
 
@@ -140,12 +161,12 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
                     File usernameFile = new File(usernamesFile.getText());
                     BufferedReader usernameReader = new BufferedReader(new FileReader(usernameFile));
                     while (usernameReader.ready()) {
-                        Account account = new MinecraftAccount(usernameReader.readLine().trim());
+                        Account account = new AttemptedAccount(usernameReader.readLine().trim());
                         account.setListener(accountListener);
                         accountList.add(account);
                     }
                     usernameReader.close();
-                    Session.LOGGER.info("Loaded " + accountList.size() + " accounts (" + usernameFile.getAbsolutePath() + ").");
+                    EggCrack.LOGGER.info("Loaded " + accountList.size() + " accounts (" + usernameFile.getAbsolutePath() + ").");
                 } catch (FileNotFoundException ex) {
                     JOptionPane.showMessageDialog(null, "Username file not found.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
@@ -162,7 +183,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
                     while (passwordReader.ready())
                         credentialList.add(Credentials.createPassword(passwordReader.readLine().trim()));
                     passwordReader.close();
-                    Session.LOGGER.info("Loaded " + credentialList.size() + " passwords (" + passwordFile.getAbsolutePath() + ").");
+                    EggCrack.LOGGER.info("Loaded " + credentialList.size() + " passwords (" + passwordFile.getAbsolutePath() + ").");
                 } catch (FileNotFoundException ex) {
                     JOptionPane.showMessageDialog(null, "Password file not found.", "Error", JOptionPane.ERROR_MESSAGE);
                     return;
@@ -182,11 +203,11 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
                             try {
                                 proxyList.add(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyLine[0], Integer.parseInt(proxyLine[1]))));
                             } catch (Exception ex) {
-                                Session.LOGGER.warning("Problem loading proxy: " + ex.getMessage());
+                                EggCrack.LOGGER.warning("Problem loading proxy: " + ex.getMessage());
                             }
                         }
                         proxyReader.close();
-                        Session.LOGGER.info("Loaded " + proxyList.size() + " HTTP proxies (" + proxyFile.getAbsolutePath() + ").");
+                        EggCrack.LOGGER.info("Loaded " + proxyList.size() + " HTTP proxies (" + proxyFile.getAbsolutePath() + ").");
                     }
                 } catch (FileNotFoundException ex) {
                     JOptionPane.showMessageDialog(null, "HTTP proxy file not found.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -204,11 +225,11 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
                             try {
                                 proxyList.add(new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyLine[0], Integer.parseInt(proxyLine[1]))));
                             } catch (Exception ex) {
-                                Session.LOGGER.warning("Problem loading proxy: " + ex.getMessage());
+                                EggCrack.LOGGER.warning("Problem loading proxy: " + ex.getMessage());
                             }
                         }
                         proxyReader.close();
-                        Session.LOGGER.info("Loaded " + proxyList.size() + " SOCKS proxies (" + proxyFile.getAbsolutePath() + ").");
+                        EggCrack.LOGGER.info("Loaded " + proxyList.size() + " SOCKS proxies (" + proxyFile.getAbsolutePath() + ").");
                     }
                 } catch (FileNotFoundException ex) {
                     JOptionPane.showMessageDialog(null, "SOCKS proxy file not found.", "Error", JOptionPane.ERROR_MESSAGE);
@@ -319,7 +340,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
         exit.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                System.exit(0);
+                setVisible(false);
             }
         });
         checking.addActionListener(new ActionListener() {
@@ -375,8 +396,6 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
         dialog.pack();
         dialog.setLocationRelativeTo(null);
         dialog.setVisible(true); //Show.
-
-        System.exit(0);
     }
 
     private void createUIComponents() {
@@ -403,6 +422,11 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
     @Override
     public void onAccountCompleted(Account account, Credential credential) {
         getRow(account).setStatus("<html><b><font color=\"green\">Cracked</font></b></html>");
+    }
+
+    @Override
+    public void onAccountTried(Account account, Credential credential) {
+        getRow(account).sort();
     }
 
     private DefaultTableModel getTableModel() {

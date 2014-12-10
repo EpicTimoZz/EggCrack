@@ -11,10 +11,16 @@ public class JsonPluginConfiguration extends JavaPluginConfiguration {
     private String name;
 
     @Expose
-    private String version;
+    private int version = 1; //Default
+
+    @Expose
+    private int versionDependency = 0; //Default
 
     @Override
-    public String getVersion() {
+    public int getVersionDependency() { return versionDependency; }
+
+    @Override
+    public int getVersion() {
         return version;
     }
 

@@ -8,7 +8,6 @@ import java.util.logging.LogRecord;
 public class LineLogFormatter extends Formatter {
     private String lineSeparator = "\n";
     public synchronized String format(LogRecord record) {
-
         StringBuilder sb = new StringBuilder();
         String message = formatMessage(record);
 

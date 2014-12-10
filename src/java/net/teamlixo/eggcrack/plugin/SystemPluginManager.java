@@ -1,20 +1,12 @@
 package net.teamlixo.eggcrack.plugin;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public class SystemPluginManager implements PluginManager {
+public class SystemPluginManager extends FilePluginManager {
     private Map<String, Plugin> pluginList = new HashMap<>();
-    private PluginLoader pluginLoader;
-
-    public SystemPluginManager(PluginLoader pluginLoader) {
-        this.pluginLoader = pluginLoader;
-    }
-
-    @Override
-    public PluginLoader getLoader() {
-        return pluginLoader;
-    }
 
     @Override
     public void registerPlugin(Plugin plugin) {
@@ -24,5 +16,15 @@ public class SystemPluginManager implements PluginManager {
     @Override
     public void unregisterPlugin(Plugin plugin) {
         pluginList.remove(plugin.getName());
+    }
+
+    @Override
+    public Plugin getPlugin(String name) {
+        return pluginList.get(name);
+    }
+
+    @Override
+    public List<Plugin> listPlugins() {
+        return new ArrayList<>(pluginList.values());
     }
 }

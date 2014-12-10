@@ -1,0 +1,6 @@
+{
+    "name": "MinecraftPlugin",
+    "version": 1,
+    "dependencyVersion": 1,
+    "mainClass": "net.teamlixo.eggcrack.minecraft.MinecraftPlugin"
+}
