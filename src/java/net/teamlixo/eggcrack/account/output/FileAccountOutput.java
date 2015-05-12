@@ -1,5 +1,6 @@
 package net.teamlixo.eggcrack.account.output;
 
+import net.teamlixo.eggcrack.EggCrack;
 import net.teamlixo.eggcrack.account.Account;
 import net.teamlixo.eggcrack.credential.Credential;
 
@@ -24,6 +25,9 @@ public class FileAccountOutput extends AccountOutput {
 
             bufferedWriter.flush();
             bufferedWriter.close();
+
+            EggCrack.LOGGER.fine("Account " + account.getUsername()
+                    + " saved to file \"" + file.getAbsolutePath() + "\".");
         }
     }
 }

