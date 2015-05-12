@@ -1,6 +1,7 @@
 package net.teamlixo.eggcrack.credential.password;
 
 import net.teamlixo.eggcrack.account.Account;
+import net.teamlixo.eggcrack.account.AuthenticatedAccount;
 import net.teamlixo.eggcrack.authentication.AbstractAuthenticationService;
 import net.teamlixo.eggcrack.authentication.AuthenticationException;
 import net.teamlixo.eggcrack.authentication.AuthenticationService;
@@ -17,12 +18,12 @@ public abstract class PasswordAuthenticationService extends AbstractAuthenticati
     }
 
     @Override
-    public boolean authenticate(Account account, Credential credential, Proxy proxy) throws AuthenticationException {
+    public AuthenticatedAccount authenticate(Account account, Credential credential, Proxy proxy) throws AuthenticationException {
         if (!(credential instanceof PasswordCredential))
             throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_CREDENTIAL);
 
         return authenticate(account, ((PasswordCredential)credential).getPassword(), proxy);
     }
 
-    protected abstract boolean authenticate(Account account, String password, Proxy proxy) throws AuthenticationException;
+    protected abstract AuthenticatedAccount authenticate(Account account, String password, Proxy proxy) throws AuthenticationException;
 }

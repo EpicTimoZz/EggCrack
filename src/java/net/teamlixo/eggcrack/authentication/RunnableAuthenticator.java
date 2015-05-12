@@ -1,6 +1,7 @@
 package net.teamlixo.eggcrack.authentication;
 
 import net.teamlixo.eggcrack.EggCrack;
+import net.teamlixo.eggcrack.account.AuthenticatedAccount;
 import net.teamlixo.eggcrack.session.Session;
 import net.teamlixo.eggcrack.account.Account;
 import net.teamlixo.eggcrack.account.AccountListener;
@@ -61,8 +62,10 @@ public class RunnableAuthenticator implements Runnable {
                 if (accountListener != null) accountListener.onAccountAttempting(account, credential);
 
                 try {
-                    if (authenticationService.authenticate(account, credential, proxyIterator.next())) {
-                        authenticationCallback.onAuthenticationCompleted(account, credential);
+                    AuthenticatedAccount authenticatedAccount =
+                            authenticationService.authenticate(account, credential, proxyIterator.next());
+                    if (authenticatedAccount != null) {
+                        authenticationCallback.onAuthenticationCompleted(authenticatedAccount);
                         if (accountListener != null) accountListener.onAccountCompleted(account, credential);
                         return;
                     } else {

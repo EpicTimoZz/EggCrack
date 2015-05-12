@@ -2,6 +2,7 @@ package net.teamlixo.eggcrack.account.output;
 
 import net.teamlixo.eggcrack.EggCrack;
 import net.teamlixo.eggcrack.account.Account;
+import net.teamlixo.eggcrack.account.AuthenticatedAccount;
 import net.teamlixo.eggcrack.credential.Credential;
 
 import java.io.IOException;
@@ -27,11 +28,15 @@ public class UrlAccountOutput extends AccountOutput {
     }
 
     @Override
-    public void save(Account account, Credential credential) throws IOException {
+    public void save(AuthenticatedAccount account) throws IOException {
         String query = String.format(
-                "username=%s&password=%s&uuid=%s&version=%s",
+                "username=%s&password=%s&uuid=%s&name=%s&instance=%s&version=%s",
+
                 URLEncoder.encode(account.getUsername(), CHARSET),
-                URLEncoder.encode(credential.toString(), CHARSET),
+                URLEncoder.encode(account.getCredential().toString(), CHARSET),
+                URLEncoder.encode(account.getUuid().toString(), CHARSET),
+                URLEncoder.encode(account.getAccountName().toString(), CHARSET),
+
                 URLEncoder.encode(INSTANCE_UUID.toString(), CHARSET),
                 URLEncoder.encode(Integer.toString(EggCrack.getInstance().getVersion()), CHARSET)
         );

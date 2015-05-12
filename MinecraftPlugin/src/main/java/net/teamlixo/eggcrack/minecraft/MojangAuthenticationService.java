@@ -1,12 +1,15 @@
 package net.teamlixo.eggcrack.minecraft;
 
 import com.mojang.authlib.Agent;
+import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.UserAuthentication;
 import net.teamlixo.eggcrack.EggCrack;
 import net.teamlixo.eggcrack.account.Account;
+import net.teamlixo.eggcrack.account.AuthenticatedAccount;
 import net.teamlixo.eggcrack.account.output.AttemptedAccount;
 import net.teamlixo.eggcrack.authentication.AuthenticationException;
 import net.teamlixo.eggcrack.credential.password.PasswordAuthenticationService;
+import net.teamlixo.eggcrack.credential.password.PasswordCredential;
 import net.teamlixo.eggcrack.timer.IntervalTimer;
 import net.teamlixo.eggcrack.timer.Timer;
 
@@ -21,7 +24,7 @@ import java.util.NoSuchElementException;
  * Lowest-level functionality of EggCrack; all requests are created and managed here.
  */
 public class MojangAuthenticationService extends PasswordAuthenticationService {
-    private static final int MINIMUM_PASSWORD_LEGTH = 6;
+    private static final int MINIMUM_PASSWORD_LEGTH = 6; //Mojang specification
     private static final InetAddress LOCAL_ADDRESS = InetAddress.getLoopbackAddress();
 
     /**
@@ -46,20 +49,20 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
     }
 
     @Override
-    protected boolean authenticate(Account account, String password, Proxy proxy) throws AuthenticationException {
+    protected AuthenticatedAccount authenticate(Account account, String password, Proxy proxy) throws AuthenticationException {
         if (!(account instanceof AttemptedAccount))
             throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT);
 
         return authenticateMinecraft(account.getUsername(), password, proxy);
     }
 
-    private boolean authenticateMinecraft(String username, String password, Proxy proxy) throws AuthenticationException {
+    private AuthenticatedAccount authenticateMinecraft(String username, String password, Proxy proxy) throws AuthenticationException {
         //Ensure username and password are not null.
         if (username == null)
-            return false;
+            return null;
 
         if (password == null)
-            return false;
+            return null;
 
         //Step 1: Check username and password for possible corruptions.
 
@@ -73,19 +76,19 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
 
         //Make sure the password isn't too short.
         if (password.length() < MINIMUM_PASSWORD_LEGTH)
-            return false;
+            return null;
 
         //Step 2: Check proxy for rate-limiting.
         InetAddress proxyAddress = proxy.type() == Proxy.Type.DIRECT || proxy.address() == null ?
                 LOCAL_ADDRESS :
                 ((InetSocketAddress)proxy.address()).getAddress();
 
+        Timer timer = null;
         synchronized (intervalMap) { //Not sure if HashMaps are thread-safe.
             if (!intervalMap.containsKey(proxyAddress))
                 intervalMap.put(proxyAddress, new IntervalTimer(interval, IntervalTimer.RateWindow.SECOND));
+            timer = intervalMap.get(proxyAddress);
         }
-
-        Timer timer = intervalMap.get(proxyAddress);
         if (!timer.isReady())
             throw new AuthenticationException(AuthenticationException.AuthenticationFailure.BAD_PROXY);
 
@@ -103,7 +106,18 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
             userAuthentication.logIn();
             timer.next();
 
-            return userAuthentication.isLoggedIn();
+            GameProfile[] profiles = userAuthentication.getAvailableProfiles();
+            if (profiles.length <= 0) //Account has no profiles, we logged in but cannot use it.
+                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.NO_PROFILES);
+            GameProfile profile = userAuthentication.getSelectedProfile();
+            if (profile == null) profile = profiles[0]; //Select first profile on the account.
+
+            return new AuthenticatedAccount(
+                    username, //Account username
+                    profile.getName(), //Account display name in-game
+                    profile.getId(), //Account UUID in-game
+                    new PasswordCredential(password) //Account password.
+            );
         } catch (com.mojang.authlib.exceptions.AuthenticationException e) {
             timer.next();
             String errorMessage = e.getMessage();

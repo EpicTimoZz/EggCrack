@@ -23,6 +23,7 @@ public class AuthenticationException extends Exception {
         BAD_PROXY(AuthenticationAction.RETRY_CREDENTIALS, "Bad proxy"),
         TIMEOUT(AuthenticationAction.RETRY_CREDENTIALS, "Authentication operation timed out."),
         INVALID_ACCOUNT(AuthenticationAction.STOP, "Account invalid; authentication cannot be performed."),
+        NO_PROFILES(AuthenticationAction.STOP, "Account does not have any profiles."),
         INVALID_CREDENTIAL(AuthenticationAction.NEXT_CREDENTIALS, "Invalid credential for account.");
 
         private final AuthenticationAction action;

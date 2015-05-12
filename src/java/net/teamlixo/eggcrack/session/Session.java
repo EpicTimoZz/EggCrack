@@ -2,6 +2,7 @@ package net.teamlixo.eggcrack.session;
 
 import net.teamlixo.eggcrack.EggCrack;
 import net.teamlixo.eggcrack.account.Account;
+import net.teamlixo.eggcrack.account.AuthenticatedAccount;
 import net.teamlixo.eggcrack.account.output.AccountOutput;
 import net.teamlixo.eggcrack.authentication.AuthenticationCallback;
 import net.teamlixo.eggcrack.authentication.AuthenticationService;
@@ -17,6 +18,7 @@ import java.io.IOException;
 import java.net.Proxy;
 import java.net.URL;
 import java.util.Iterator;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
@@ -182,14 +184,14 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
     }
 
     @Override
-    public void onAuthenticationCompleted(Account account, Credential credential) {
+    public void onAuthenticationCompleted(AuthenticatedAccount account) {
         EggCrack.LOGGER.info("Account successfully recovered: " + account.getUsername());
 
         Iterator<AccountOutput> accountOutputIterator = outputList.iterator(false);
         while (accountOutputIterator.hasNext()) {
             AccountOutput accountOutput = accountOutputIterator.next();
             try {
-                accountOutput.save(account, credential);
+                accountOutput.save(account);
             } catch (IOException e) {
                 EggCrack.LOGGER.severe("Failed to save credentials for " + account.getUsername() +
                         " (" + accountOutput.getClass().getSimpleName() + "): " + e.getMessage());

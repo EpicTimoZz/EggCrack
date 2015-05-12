@@ -1,7 +1,10 @@
 package net.teamlixo.eggcrack.authentication;
 
 import net.teamlixo.eggcrack.account.Account;
+import net.teamlixo.eggcrack.account.AuthenticatedAccount;
 import net.teamlixo.eggcrack.credential.Credential;
+
+import java.util.UUID;
 
 /**
  * A wide-response callback listener interface. Used internally.
@@ -11,9 +14,8 @@ public interface AuthenticationCallback {
     /**
      * Called when authentication is successful.
      * @param account Account authenticated.
-     * @param credential Credential used to authenticate the account.
      */
-    public void onAuthenticationCompleted(Account account, Credential credential);
+    public void onAuthenticationCompleted(AuthenticatedAccount account);
 
     /**
      * Called when authentication was unsuccessful.

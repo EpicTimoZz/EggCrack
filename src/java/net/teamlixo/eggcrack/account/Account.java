@@ -31,4 +31,16 @@ public abstract class Account {
     public final String getUsername() {
         return username;
     }
+
+    @Override
+    public int hashCode() {
+        return getUsername().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) return false;
+        if (o instanceof Account) return ((Account) o).getUsername().equalsIgnoreCase(this.getUsername());
+        return false;
+    }
 }
