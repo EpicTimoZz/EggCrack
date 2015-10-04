@@ -19,8 +19,7 @@ EggCrack originally gained its popularity on Nodus Forums back in 2013, when the
 <p>
 <b>Releases</b><br/>
 <ul>
-<li><a href="https://github.com/Manevolent/EggCrack/archive/stable.zip">Latest stable release</a></li>
-<li><a href="https://github.com/Manevolent/EggCrack/archive/beta.zip">Latest beta build</a></li>
+<li><a href="https://github.com/Manevolent/EggCrack/archive/master.zip">Latest release</a></li>
 </ul>
 <p>If you are an end-user running EggCrack, everything you need is in the <b>release</b> folder.</p>
 <br/><br/>
