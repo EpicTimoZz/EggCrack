@@ -133,7 +133,8 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
                 throw new AuthenticationException(AuthenticationException.AuthenticationFailure.REJECTED);
             } else if (errorMessage.equals("Cannot contact authentication server")) {
                 throw new AuthenticationException(AuthenticationException.AuthenticationFailure.TIMEOUT);
-            } else if (errorMessage.equals("Invalid credentials. Account migrated, use e-mail as username.")) {
+            } else if (errorMessage.equals("Invalid credentials. Account migrated, use e-mail as username.") ||
+                    errorMessage.equals("Invalid credentials. Account migrated, use email as username.")) {
                 throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT);
             } else {
                 EggCrack.LOGGER.warning("[Authentication] Unexpected response: " + e.getMessage());
