@@ -85,6 +85,8 @@ public final class Main {
         ArgumentAcceptingOptionSpec logFileArgument = optionsParser.accepts("logFile").withOptionalArg().ofType(String.class);
         ArgumentAcceptingOptionSpec logLevelArgument = optionsParser.accepts("logLevel").withOptionalArg().ofType(String.class).defaultsTo("warn");
 
+        ArgumentAcceptingOptionSpec checkAccountsArgument = optionsParser.accepts("check").withOptionalArg();
+
         OptionSet optionSet = optionsParser.parse(args);
 
         if (optionSet.has(debugArgument)) {
@@ -293,36 +295,65 @@ public final class Main {
 
         //Import accounts from file.
         ExtendedList<Account> accountList = new ExtendedArrayList<Account>();
-        File usernameFile = new File(optionSet.valueOf(usernameArgument).toString());
-        BufferedReader usernameReader = new BufferedReader(new FileReader(usernameFile));
-        while (usernameReader.ready())
-            accountList.add(new AttemptedAccount(usernameReader.readLine().trim()));
-        usernameReader.close();
-        EggCrack.LOGGER.info("Loaded " + accountList.size() + " accounts (" + usernameFile.getAbsolutePath() + ").");
+        if (!optionSet.has(checkAccountsArgument)) {
+            File usernameFile = new File(optionSet.valueOf(usernameArgument).toString());
+            BufferedReader usernameReader = new BufferedReader(new FileReader(usernameFile));
+            while (usernameReader.ready()) {
+                String line = usernameReader.readLine();
+                if (line.trim().length() <= 0) continue;
+                accountList.add(new AttemptedAccount(line.trim()));
+            }
+            usernameReader.close();
+
+            EggCrack.LOGGER.info("Loaded " + accountList.size() + " usernames (" + usernameFile.getAbsolutePath() + ").");
+        } else {
+            File usernameFile = new File(optionSet.valueOf(checkAccountsArgument).toString());
+            BufferedReader usernameReader = new BufferedReader(new FileReader(usernameFile));
+            while (usernameReader.ready()) {
+                String line = usernameReader.readLine();
+                if (line.trim().length() <= 0) continue;
+
+                String[] params = line.split(":");
+                if (params.length < 2) {
+                    EggCrack.LOGGER.warning("Bad line");
+                }
+
+                AttemptedAccount account = new AttemptedAccount(params[0].trim());
+                account.setUncheckedPassword(params[1]);
+                accountList.add(account);
+            }
+            usernameReader.close();
+
+            EggCrack.LOGGER.info("Loaded " + accountList.size() + " unchecked accounts (" + usernameFile.getAbsolutePath() + ").");
+        }
 
         //Import credentials from file.
         ExtendedList<Credential> credentialList = new ExtendedArrayList<Credential>();
-        File passwordFile = new File(optionSet.valueOf(passwordArgument).toString());
-        BufferedReader passwordReader = new BufferedReader(new FileReader(passwordFile));
-        while (passwordReader.ready())
-            credentialList.add(Credentials.createPassword(passwordReader.readLine().trim()));
-        passwordReader.close();
-        EggCrack.LOGGER.info("Loaded " + credentialList.size() + " passwords (" + passwordFile.getAbsolutePath() + ").");
+        if (!optionSet.has(checkAccountsArgument)) {
+            File passwordFile = new File(optionSet.valueOf(passwordArgument).toString());
+            BufferedReader passwordReader = new BufferedReader(new FileReader(passwordFile));
+            while (passwordReader.ready())
+                credentialList.add(Credentials.createPassword(passwordReader.readLine().trim()));
+            passwordReader.close();
+            EggCrack.LOGGER.info("Loaded " + credentialList.size() + " passwords (" + passwordFile.getAbsolutePath() + ").");
+        }
 
         //Import proxies from file.
         ExtendedList<Proxy> proxyList = new ExtendedArrayList<Proxy>();
-        File proxyFile = new File(optionSet.valueOf(proxyArgument).toString());
-        BufferedReader proxyReader = new BufferedReader(new FileReader(proxyFile));
-        while (proxyReader.ready()) {
-            String[] proxyLine = proxyReader.readLine().split(":");
-            try {
-                proxyList.add(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyLine[0], Integer.parseInt(proxyLine[1]))));
-            } catch (Exception ex) {
-                EggCrack.LOGGER.warning("Problem loading proxy: " + ex.getMessage());
+        if (optionSet.has(proxyArgument)) {
+            File proxyFile = new File(optionSet.valueOf(proxyArgument).toString());
+            BufferedReader proxyReader = new BufferedReader(new FileReader(proxyFile));
+            while (proxyReader.ready()) {
+                String[] proxyLine = proxyReader.readLine().split(":");
+                try {
+                    proxyList.add(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyLine[0], Integer.parseInt(proxyLine[1]))));
+                } catch (Exception ex) {
+                    EggCrack.LOGGER.warning("Problem loading proxy: " + ex.getMessage());
+                }
             }
-        }
-        proxyReader.close();
-        EggCrack.LOGGER.info("Loaded " + proxyList.size() + " proxies (" + proxyFile.getAbsolutePath() + ").");
+            proxyReader.close();
+            EggCrack.LOGGER.info("Loaded " + proxyList.size() + " proxies (" + proxyFile.getAbsolutePath() + ").");
+        } else proxyList.add(Proxy.NO_PROXY);
 
         //Initialize the EggCrack instance to create a credential store.
         final Session session = new Session(

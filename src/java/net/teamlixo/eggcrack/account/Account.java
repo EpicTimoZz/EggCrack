@@ -2,6 +2,7 @@ package net.teamlixo.eggcrack.account;
 
 public abstract class Account {
     private final String username;
+    private String uncheckedPassword;
     private AccountListener accountListener;
 
     public Account(String username) {
@@ -42,5 +43,13 @@ public abstract class Account {
         if (o == null) return false;
         if (o instanceof Account) return ((Account) o).getUsername().equalsIgnoreCase(this.getUsername());
         return false;
+    }
+
+    public String getUncheckedPassword() {
+        return uncheckedPassword;
+    }
+
+    public void setUncheckedPassword(String uncheckedPassword) {
+        this.uncheckedPassword = uncheckedPassword;
     }
 }

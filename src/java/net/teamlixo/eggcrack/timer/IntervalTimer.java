@@ -2,7 +2,7 @@ package net.teamlixo.eggcrack.timer;
 
 public final class IntervalTimer implements Timer {
     private final long interval;
-    private long nextTick;
+    private volatile long nextTick;
 
     public IntervalTimer(long seconds) {
         this(seconds, RateWindow.SECOND);
@@ -14,12 +14,16 @@ public final class IntervalTimer implements Timer {
 
     @Override
     public boolean isReady() {
-        return System.nanoTime() >= nextTick;
+        synchronized (this) {
+            return System.nanoTime() >= nextTick;
+        }
     }
 
     @Override
     public void next() {
-        nextTick = System.nanoTime() + interval;
+        synchronized (this) {
+            nextTick = System.nanoTime() + interval;
+        }
     }
 
     public enum RateWindow {

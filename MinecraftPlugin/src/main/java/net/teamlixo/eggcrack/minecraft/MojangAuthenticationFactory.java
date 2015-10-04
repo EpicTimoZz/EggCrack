@@ -14,7 +14,6 @@ public class MojangAuthenticationFactory implements AuthenticationFactory {
         this.agent = agent;
     }
 
-    @Override
     public UserAuthentication createUserAuthentication(Proxy proxy) {
         return new YggdrasilAuthenticationService(
                         proxy,

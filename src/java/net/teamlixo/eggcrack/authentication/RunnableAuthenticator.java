@@ -2,6 +2,7 @@ package net.teamlixo.eggcrack.authentication;
 
 import net.teamlixo.eggcrack.EggCrack;
 import net.teamlixo.eggcrack.account.AuthenticatedAccount;
+import net.teamlixo.eggcrack.credential.Credentials;
 import net.teamlixo.eggcrack.session.Session;
 import net.teamlixo.eggcrack.account.Account;
 import net.teamlixo.eggcrack.account.AccountListener;
@@ -36,13 +37,16 @@ public class RunnableAuthenticator implements Runnable {
         this.credentialIterator = credentialIterator;
         this.proxyIterator = proxyIterator;
         this.authenticationCallback = authenticationCallback;
+        this.tracker = tracker;
     }
 
     @Override
     public void run() {
         Thread.currentThread().setName("Authenticator-" + account.getUsername());
 
-        Credential credential = null;
+        Credential credential = account.getUncheckedPassword() != null ?
+                Credentials.createPassword(account.getUncheckedPassword()) : null;
+
         AccountListener accountListener = account.getListener();
         if (accountListener != null) accountListener.onAccountStarted(account);
 
@@ -76,6 +80,9 @@ public class RunnableAuthenticator implements Runnable {
                         }
                     }
                 } catch (AuthenticationException exception) {
+                    if (exception.getFailure().hasRequested())
+                        tracker.setRequests(tracker.getRequests() + 1);
+
                     if (exception.getFailure().getAction() == AuthenticationException.AuthenticationAction.STOP) {
                         EggCrack.LOGGER.warning("Stopping session for " + account.getUsername() + ": " + exception.getMessage());
                         break;
@@ -84,7 +91,7 @@ public class RunnableAuthenticator implements Runnable {
                         synchronized (tracker) {
                             tracker.setAttempts(tracker.getAttempts() + 1);
                         }
-                        credential = credentialIterator.next();
+                        if (account.getUncheckedPassword() == null) credential = credentialIterator.next();
                     }
                 }
             } catch (NoSuchElementException exception) {
@@ -94,6 +101,7 @@ public class RunnableAuthenticator implements Runnable {
             }
         }
 
+        System.out.println("Exiting thread for " + account.getUsername());
         if (accountListener != null) accountListener.onAccountFailed(account );
         authenticationCallback.onAuthenticationFailed(account);
     }

@@ -35,7 +35,7 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
     /**
      * Interval each proxy may send requests at, in seconds.
      */
-    private float interval = 0.005F;
+    private float interval = 0.05F;
     private final Map<InetAddress, Timer> intervalMap = new HashMap<InetAddress, Timer>();
 
     public MojangAuthenticationService() {
@@ -89,7 +89,8 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
                 intervalMap.put(proxyAddress, new IntervalTimer(interval, IntervalTimer.RateWindow.SECOND));
             timer = intervalMap.get(proxyAddress);
         }
-        if (!timer.isReady())
+
+        if (proxy.type() != Proxy.Type.DIRECT && !timer.isReady())
             throw new AuthenticationException(AuthenticationException.AuthenticationFailure.BAD_PROXY);
 
         EggCrack.LOGGER.finer("[Authentication] " + username + ": using proxy [type=" + proxy.type().name() + ",address=" + proxyAddress + "].");
@@ -120,6 +121,7 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
             );
         } catch (com.mojang.authlib.exceptions.AuthenticationException e) {
             timer.next();
+
             String errorMessage = e.getMessage();
 
             EggCrack.LOGGER.finer("[Authentication] Attempt [username=" + username + ", password=" + password + "] failed: " + e.getMessage());

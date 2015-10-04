@@ -1,14 +1,9 @@
 package net.teamlixo.eggcrack;
 
-import com.google.gson.Gson;
 import net.teamlixo.eggcrack.authentication.AuthenticationService;
-import net.teamlixo.eggcrack.config.Configuration;
-import net.teamlixo.eggcrack.config.JsonConfiguration;
 import net.teamlixo.eggcrack.plugin.*;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.util.*;
 import java.util.logging.Logger;

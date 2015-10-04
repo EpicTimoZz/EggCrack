@@ -38,9 +38,18 @@ public abstract class AbstractExtendedList<T> implements ExtendedList<T> {
         list.clear();
     }
 
-    private class LoopedIterator<T> implements Iterator<T> {
-        private ExtendedList<T> list;
-        private Iterator<T> iterator;
+    private void remove(int i) {
+        list.remove(i);
+    }
+
+    private T get(int i) {
+        return list.get(i);
+    }
+
+    private class LoopedIterator implements Iterator {
+        private final Object lock = new Object();
+        private final ExtendedList<T> list;
+        private volatile int idx = 0;
 
         public LoopedIterator(ExtendedList<T> list) {
             this.list = list;
@@ -48,25 +57,23 @@ public abstract class AbstractExtendedList<T> implements ExtendedList<T> {
 
         @Override
         public boolean hasNext() {
-            if (iterator == null || !iterator.hasNext())
-                this.iterator = list.iterator(false);
-
-            synchronized (iterator) {
-                return iterator.hasNext();
-            }
+            return list.size() > 0;
         }
 
         @Override
         public T next() {
-            synchronized (iterator) {
-                return iterator.next();
+            synchronized (lock) {
+                idx ++;
+                if (idx >= list.size()) idx = 0;
+                return AbstractExtendedList.this.get(idx);
             }
         }
 
         @Override
         public void remove() {
-            synchronized (iterator) {
-                iterator.remove();
+            synchronized (lock) {
+                AbstractExtendedList.this.remove(idx);
+                idx --;
             }
         }
     }

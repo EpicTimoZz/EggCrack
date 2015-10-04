@@ -132,7 +132,7 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
                     )
             );
 
-        final long totalAttempts = accountList.size() * credentialList.size();
+        final long totalAttempts = Math.max(accountList.size(), accountList.size() * credentialList.size());
         waitFutures(futureList, new FutureRunnable() {
             long lastSecond = System.currentTimeMillis();
             long requestsLastSecond = 0;
