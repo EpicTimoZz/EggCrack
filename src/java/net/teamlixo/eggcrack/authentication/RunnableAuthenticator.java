@@ -91,7 +91,10 @@ public class RunnableAuthenticator implements Runnable {
                         synchronized (tracker) {
                             tracker.setAttempts(tracker.getAttempts() + 1);
                         }
-                        if (account.getUncheckedPassword() == null) credential = credentialIterator.next();
+                        if (account.getUncheckedPassword() == null)
+                            credential = credentialIterator.next();
+                        else
+                            break; // Checker only tries one password.
                     }
                 }
             } catch (NoSuchElementException exception) {
@@ -101,7 +104,6 @@ public class RunnableAuthenticator implements Runnable {
             }
         }
 
-        System.out.println("Exiting thread for " + account.getUsername());
         if (accountListener != null) accountListener.onAccountFailed(account );
         authenticationCallback.onAuthenticationFailed(account);
     }
