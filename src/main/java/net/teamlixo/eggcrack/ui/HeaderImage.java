@@ -9,7 +9,7 @@ public class HeaderImage extends JComponent {
     private Image image;
     public HeaderImage() throws IOException {
         this.setSize(new Dimension(500, 100));
-        image = ImageIO.read(this.getClass().getResourceAsStream("/net/teamlixo/eggcrack/eggcrack.png"));
+        image = ImageIO.read(this.getClass().getResourceAsStream("/net/teamlixo/eggcrack/eggcrack_2.0.png"));
     }
 
     @Override

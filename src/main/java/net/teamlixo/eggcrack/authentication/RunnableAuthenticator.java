@@ -3,7 +3,7 @@ package net.teamlixo.eggcrack.authentication;
 import net.teamlixo.eggcrack.EggCrack;
 import net.teamlixo.eggcrack.account.AuthenticatedAccount;
 import net.teamlixo.eggcrack.credential.Credentials;
-import net.teamlixo.eggcrack.session.Session;
+import net.teamlixo.eggcrack.list.AbstractExtendedList;
 import net.teamlixo.eggcrack.account.Account;
 import net.teamlixo.eggcrack.account.AccountListener;
 import net.teamlixo.eggcrack.credential.Credential;
@@ -12,6 +12,7 @@ import net.teamlixo.eggcrack.session.Tracker;
 import java.net.Proxy;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.logging.Level;
 
 /**
  * Helper class designed to provide asynchronous authentication functionality to EggCrack. Calls AuthenticationCallback
@@ -42,28 +43,27 @@ public class RunnableAuthenticator implements Runnable {
 
     @Override
     public void run() {
-        Thread.currentThread().setName("Authenticator-" + account.getUsername());
+        account.setState(Account.State.STARTED);
 
-        Credential credential = account.getUncheckedPassword() != null ?
-                Credentials.createPassword(account.getUncheckedPassword()) : null;
+        Thread.currentThread().setName("Authenticator-" + account.getUsername());
 
         AccountListener accountListener = account.getListener();
         if (accountListener != null) accountListener.onAccountStarted(account);
+
+        Credential credential = account.getUncheckedPassword() != null ?
+                Credentials.createPassword(account.getUncheckedPassword()) : null;
+        if (credential != null) if (accountListener != null) accountListener.onAccountAttempting(account, credential);
 
         while (proxyIterator.hasNext()) {
             try {
                 if (credential == null) {
                     if (accountListener != null) accountListener.onAccountTried(account, credential);
                     credential = credentialIterator.next();
-                    synchronized (tracker) {
-                        tracker.setAttempts(tracker.getAttempts() + 1);
-                    }
+                    if (accountListener != null) accountListener.onAccountAttempting(account, credential);
                 }
 
                 EggCrack.LOGGER.finest("[Account: " + account.getUsername() +
                         "] Sending authentication request [password=" + credential.toString() + "]...");
-
-                if (accountListener != null) accountListener.onAccountAttempting(account, credential);
 
                 try {
                     AuthenticatedAccount authenticatedAccount =
@@ -72,28 +72,30 @@ public class RunnableAuthenticator implements Runnable {
                         authenticationCallback.onAuthenticationCompleted(authenticatedAccount);
                         if (accountListener != null) accountListener.onAccountCompleted(account, credential);
                         return;
-                    } else {
-                        if (accountListener != null) accountListener.onAccountTried(account, credential);
-                        credential = credentialIterator.next();
-                        synchronized (tracker) {
-                            tracker.setAttempts(tracker.getAttempts() + 1);
-                        }
-                    }
+                    } else
+                        throw new AuthenticationException(
+                                AuthenticationException.AuthenticationFailure.INCORRECT_CREDENTIAL
+                        );
                 } catch (AuthenticationException exception) {
-                    if (exception.getFailure().hasRequested())
+                    if (exception.getFailure().hasRequested()) {
                         tracker.setRequests(tracker.getRequests() + 1);
+                        if (accountListener != null) accountListener.onAccountRequested(account);
+                    }
 
                     if (exception.getFailure().getAction() == AuthenticationException.AuthenticationAction.STOP) {
                         EggCrack.LOGGER.warning("Stopping session for " + account.getUsername() + ": " + exception.getMessage());
                         break;
                     } else if (exception.getFailure().getAction() == AuthenticationException.AuthenticationAction.NEXT_CREDENTIALS) {
+                        account.setProgress(((AbstractExtendedList.LoopedIterator)credentialIterator).getProgress());
+
                         if (accountListener != null) accountListener.onAccountTried(account, credential);
                         synchronized (tracker) {
                             tracker.setAttempts(tracker.getAttempts() + 1);
                         }
-                        if (account.getUncheckedPassword() == null)
+                        if (account.getUncheckedPassword() == null) {
                             credential = credentialIterator.next();
-                        else
+                            if (accountListener != null) accountListener.onAccountAttempting(account, credential);
+                        } else
                             break; // Checker only tries one password.
                     }
                 }
@@ -101,10 +103,12 @@ public class RunnableAuthenticator implements Runnable {
                 break;
             } catch (Throwable ex) {
                 //Just ignore it.
+                EggCrack.LOGGER.log(Level.SEVERE, "Unhandled exception in thread " + Thread.currentThread().getName(), ex);
             }
         }
 
         if (accountListener != null) accountListener.onAccountFailed(account );
         authenticationCallback.onAuthenticationFailed(account);
+        account.setState(Account.State.FINISHED);
     }
 }

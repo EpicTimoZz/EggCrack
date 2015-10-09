@@ -4,6 +4,8 @@ public abstract class Account {
     private final String username;
     private String uncheckedPassword;
     private AccountListener accountListener;
+    private volatile State state = State.WAITING;
+    private volatile float progress = 0f;
 
     public Account(String username) {
         this.username = username;
@@ -51,5 +53,30 @@ public abstract class Account {
 
     public void setUncheckedPassword(String uncheckedPassword) {
         this.uncheckedPassword = uncheckedPassword;
+    }
+
+    public void setProgress(float progress) {
+        this.progress = progress;
+    }
+
+    public float getProgress() {
+        return progress;
+    }
+
+    public void setState(State state) {
+        if (state == State.STARTED) setProgress(0F);
+        else if (state == State.FINISHED) setProgress(1F);
+
+        this.state = state;
+    }
+
+    public State getState() {
+        return state;
+    }
+
+    public enum State {
+        WAITING,
+        STARTED,
+        FINISHED
     }
 }

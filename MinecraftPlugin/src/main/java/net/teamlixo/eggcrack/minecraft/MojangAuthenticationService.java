@@ -16,9 +16,7 @@ import net.teamlixo.eggcrack.timer.Timer;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
 
 /**
  * Lowest-level functionality of EggCrack; all requests are created and managed here.
@@ -37,6 +35,7 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
      */
     private float interval = 0.05F;
     private final Map<InetAddress, Timer> intervalMap = new HashMap<InetAddress, Timer>();
+    private final List<Proxy> unavailableProxies = new ArrayList<Proxy>();
 
     public MojangAuthenticationService() {
         super("Yggdrasil Authentication");
@@ -88,11 +87,12 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
             if (!intervalMap.containsKey(proxyAddress))
                 intervalMap.put(proxyAddress, new IntervalTimer(interval, IntervalTimer.RateWindow.SECOND));
             timer = intervalMap.get(proxyAddress);
+
+            if (proxy.type() != Proxy.Type.DIRECT && !timer.isReady()) {
+                if (!unavailableProxies.contains(proxy)) unavailableProxies.add(proxy);
+                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.BAD_PROXY);
+            } else unavailableProxies.remove(proxy);
         }
-
-        if (proxy.type() != Proxy.Type.DIRECT && !timer.isReady())
-            throw new AuthenticationException(AuthenticationException.AuthenticationFailure.BAD_PROXY);
-
         EggCrack.LOGGER.finer("[Authentication] " + username + ": using proxy [type=" + proxy.type().name() + ",address=" + proxyAddress + "].");
 
         //Step 3: Attempt to authenticate the user using the username and password.
@@ -134,7 +134,8 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
             } else if (errorMessage.equals("Cannot contact authentication server")) {
                 throw new AuthenticationException(AuthenticationException.AuthenticationFailure.TIMEOUT);
             } else if (errorMessage.equals("Invalid credentials. Account migrated, use e-mail as username.") ||
-                    errorMessage.equals("Invalid credentials. Account migrated, use email as username.")) {
+                    errorMessage.equals("Invalid credentials. Account migrated, use email as username.") ||
+                    errorMessage.equals("Invalid username")) {
                 throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT);
             } else {
                 EggCrack.LOGGER.warning("[Authentication] Unexpected response: " + e.getMessage());
@@ -143,5 +144,9 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
         } catch (NoSuchElementException exception) {
             throw new AuthenticationException(AuthenticationException.AuthenticationFailure.BAD_PROXY);
         }
+    }
+
+    public int unavailableProxies() {
+        return unavailableProxies.size();
     }
 }

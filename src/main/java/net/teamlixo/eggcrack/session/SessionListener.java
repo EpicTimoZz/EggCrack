@@ -1,9 +1,12 @@
 package net.teamlixo.eggcrack.session;
 
-import net.teamlixo.eggcrack.session.Tracker;
-
 public interface SessionListener {
-    public void started();
-    public void update(float progress, Tracker tracker);
+    public void started(Step step);
+    public void update(float progress, Tracker tracker, int availableProxies);
     public void completed();
+
+    public static enum Step {
+        PROXY_CHECKING,
+        CRACKING
+    }
 }

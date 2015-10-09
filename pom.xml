@@ -101,6 +101,12 @@
             <groupId>com.mojang.authlib</groupId>
             <version>1.5.17</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.intellij</groupId>
+            <artifactId>forms_rt</artifactId>
+            <version>7.0.3</version>
+        </dependency>
     </dependencies>
 
     <properties>

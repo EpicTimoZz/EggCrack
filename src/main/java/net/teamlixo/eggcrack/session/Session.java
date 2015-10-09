@@ -39,6 +39,8 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
 
     private final URL checkUrl;
 
+    private volatile boolean running = true;
+
     public Session(ExecutorService executorService,
                    AuthenticationService authenticationService,
                    ExtendedList<Account> accountList,
@@ -63,12 +65,12 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
         this.checkUrl = checkUrl;
     }
 
-    public SessionListener getListener() {
-        return sessionListener;
-    }
-
     public void setListener(SessionListener sessionListener) {
         this.sessionListener = sessionListener;
+    }
+
+    public void setRunning(boolean running) {
+        this.running = running;
     }
 
     @Override
@@ -77,6 +79,8 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
 
         Iterator<Proxy> proxyIterator = proxyList.iterator(false);
         if (checkUrl != null) {
+            if (sessionListener != null) sessionListener.started(SessionListener.Step.PROXY_CHECKING);
+
             EggCrack.LOGGER.info("Checking proxies with URL \"" + checkUrl.toString() + "\"...");
             long start = System.currentTimeMillis();
 
@@ -94,16 +98,17 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
             }
 
             waitFutures(futureList, new FutureRunnable() {
-                long lastSecond = System.currentTimeMillis();
-
+                long lastSecond = 0L;
                 @Override
                 public boolean run(float progress) {
-                    if (System.currentTimeMillis() > lastSecond + 1000) {
-                        lastSecond = System.currentTimeMillis();
-                        EggCrack.LOGGER.info((int) Math.floor(progress * 100f) + "% complete.");
-                    }
+                    if (sessionListener != null) sessionListener.update(progress, tracker, proxyList.size());
 
-                    return true;
+                    long time = System.currentTimeMillis();
+                    if (time - lastSecond >= 1000L) {
+                        lastSecond = time;
+                        EggCrack.LOGGER.info((int) (Math.floor((double)progress * 1000d) / 10d) + "% complete.");
+                    }
+                    return running;
                 }
             });
 
@@ -113,7 +118,7 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
 
         EggCrack.LOGGER.info("Startup complete; initiating session...");
 
-        if (sessionListener != null) sessionListener.started();
+        if (sessionListener != null) sessionListener.started(SessionListener.Step.CRACKING);
 
         futureList.clear();
         proxyIterator = proxyList.iterator(true);
@@ -140,10 +145,24 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
 
             @Override
             public boolean run(float progress) {
+                if (!running) return false; //Break.
+
                 if (System.currentTimeMillis() > lastSecond + 1000) {
+                    Iterator<Account> accountIterator = accountList.iterator(false);
+                    progress = 0f;
+                    while (accountIterator.hasNext()) {
+                        Account account = accountIterator.next();
+                        if (account.getState() == Account.State.WAITING) continue;
+                        progress += account.getProgress() * (1f / (float)accountList.size());
+                    }
+
                     lastSecond = System.currentTimeMillis();
 
-                    if (sessionListener != null) sessionListener.update(progress, tracker);
+                    if (sessionListener != null) sessionListener.update(
+                            progress,
+                            tracker,
+                            proxyList.size() - authenticationService.unavailableProxies()
+                    );
 
                     EggCrack.LOGGER.info((Math.floor(Math.max(progress * 1000f, ((float)tracker.getAttempts() / (float)totalAttempts) * 1000f)) / 10f) + "% complete (" +
                             tracker.getCompleted() + "/" + (accountList.size() - tracker.getFailed()) + ") | Attempts: " +
@@ -222,13 +241,13 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
         int original = futureList.size();
         while (futureIterator.hasNext()) {
             Future future = futureIterator.next();
-            if (future.isDone() || future.isCancelled()) {
-                futureIterator.remove();
-            }
-
-            if (!update.run(1f - ((float)futureList.size() / (float)original)))
-                break;
+            if (future.isDone() || future.isCancelled()) futureIterator.remove();
+            if (!update.run(1f - ((float)futureList.size() / (float)original))) break;
         }
+    }
+
+    public int getTotalProxies() {
+        return proxyList.size();
     }
 
     private interface FutureRunnable {

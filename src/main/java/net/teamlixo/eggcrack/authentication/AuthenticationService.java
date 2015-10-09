@@ -24,6 +24,13 @@ public interface AuthenticationService {
      * @param proxy Proxy to authenticate with.
      * @return AuthenticatedAccount instance.
      */
-    public AuthenticatedAccount authenticate(Account account, Credential credential, Proxy proxy) throws AuthenticationException;
+    public AuthenticatedAccount authenticate(Account account, Credential credential, Proxy proxy)
+            throws AuthenticationException;
+
+    /**
+     * Finds how many proxies are not available.
+     * @return Available proxies.
+     */
+    public int unavailableProxies();
 
 }

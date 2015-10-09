@@ -8,6 +8,9 @@ public final class Tracker {
     private long start = System.currentTimeMillis();
     private int total = 0;
 
+    public Tracker() {
+    }
+
     public int getFailed() {
         return failed;
     }

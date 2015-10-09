@@ -2,6 +2,7 @@ package net.teamlixo.eggcrack.list;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 public abstract class AbstractExtendedList<T> implements ExtendedList<T> {
     private final List<T> list;
@@ -13,9 +14,9 @@ public abstract class AbstractExtendedList<T> implements ExtendedList<T> {
     @Override
     public Iterator iterator(boolean looping) {
         if (looping)
-            return new LoopedIterator(this);
+            return new LoopedIterator(this, true);
         else
-            return list.iterator();
+            return new LoopedIterator(this, false);
     }
 
     @Override
@@ -46,25 +47,30 @@ public abstract class AbstractExtendedList<T> implements ExtendedList<T> {
         return list.get(i);
     }
 
-    private class LoopedIterator implements Iterator {
+    public class LoopedIterator implements Iterator {
         private final Object lock = new Object();
         private final ExtendedList<T> list;
         private volatile int idx = 0;
+        private final boolean looping;
 
-        public LoopedIterator(ExtendedList<T> list) {
+        public LoopedIterator(ExtendedList<T> list, boolean b) {
             this.list = list;
+            this.looping = b;
         }
 
         @Override
         public boolean hasNext() {
-            return list.size() > 0;
+            return looping ? list.size() > 0 : idx + 1 < list.size();
         }
 
         @Override
         public T next() {
             synchronized (lock) {
                 idx ++;
-                if (idx >= list.size()) idx = 0;
+                if (idx >= list.size()) {
+                    if (looping) idx = 0;
+                    else throw new NoSuchElementException();
+                }
                 return AbstractExtendedList.this.get(idx);
             }
         }
@@ -75,6 +81,10 @@ public abstract class AbstractExtendedList<T> implements ExtendedList<T> {
                 AbstractExtendedList.this.remove(idx);
                 idx --;
             }
+        }
+
+        public float getProgress() {
+            return looping ? -1F : (float)idx / (float)list.size();
         }
     }
 }

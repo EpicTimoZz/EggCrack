@@ -33,4 +33,5 @@ public interface AccountListener {
      */
     public void onAccountTried(Account account, Credential credential);
 
+    public void onAccountRequested(Account account);
 }
