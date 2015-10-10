@@ -1,5 +1,5 @@
 {
 	"updateBranch": "master",
-	"updateUrl": "https://raw.githubusercontent.com/Manevolent/EggCrack/$branch/src/resources/net/teamlixo/eggcrack/VERSION",
+	"updateUrl": "https://raw.githubusercontent.com/Manevolent/EggCrack/$branch/src/main/resources/net/teamlixo/eggcrack/VERSION",
 	"updateEnable": true
 }

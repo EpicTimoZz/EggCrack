@@ -1,8 +1,12 @@
 package net.teamlixo.eggcrack.ui;
 
+import com.intellij.uiDesigner.core.GridConstraints;
+import com.intellij.uiDesigner.core.GridLayoutManager;
+import com.intellij.uiDesigner.core.Spacer;
 import net.teamlixo.eggcrack.AuthenticatorThreadFactory;
 import net.teamlixo.eggcrack.EggCrack;
 import net.teamlixo.eggcrack.account.output.AttemptedAccount;
+import net.teamlixo.eggcrack.authentication.configuration.ServiceConfiguration;
 import net.teamlixo.eggcrack.objective.ObjectiveCompleted;
 import net.teamlixo.eggcrack.session.Session;
 import net.teamlixo.eggcrack.session.SessionListener;
@@ -21,6 +25,7 @@ import net.teamlixo.eggcrack.list.array.ExtendedArrayList;
 import net.teamlixo.eggcrack.objective.Objective;
 
 import javax.swing.*;
+import javax.swing.border.TitledBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.awt.event.*;
@@ -78,6 +83,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
     private JCheckBox objective;
     private JLabel completedLbl;
     private JSpinner completedSpinner;
+    private JButton configureButton;
     private ProxiesInterface proxiesInterface = new ProxiesInterface();
 
     private volatile Session activeSession;
@@ -85,7 +91,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
     private long lastAttempts = 0L;
 
     public UserInterface() {
-        super((Frame)null, ModalityType.TOOLKIT_MODAL);
+        super((Frame) null, ModalityType.TOOLKIT_MODAL);
 
         setContentPane(contentPane);
         setModal(true);
@@ -103,10 +109,11 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
         List<AuthenticationService> authenticationServices =
                 new ArrayList<>(EggCrack.getInstance().listAuthenticationServices());
         String[] authenticationServiceNames = new String[authenticationServices.size()];
-        for (int i = 0; i < authenticationServiceNames.length; i ++)
+        for (int i = 0; i < authenticationServiceNames.length; i++)
             authenticationServiceNames[i] = authenticationServices.get(i).getName();
 
         api.setModel(new DefaultComboBoxModel(authenticationServiceNames));
+        setupConfiguration();
 
         maxthreads.setModel(new SpinnerNumberModel(32, 1, 10240000, 2));
         proxyTimeout.setModel(new SpinnerNumberModel(5000, 1, 300000, 1000));
@@ -149,7 +156,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
                     return;
                 } else {
                     for (AuthenticationService thisService : EggCrack.getInstance().listAuthenticationServices()) {
-                        if (thisService.getName().equalsIgnoreCase(method)) {
+                        if (thisService.getName().equals(method)) {
                             authenticationService = thisService;
                             break;
                         }
@@ -160,7 +167,8 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
                     JOptionPane.showMessageDialog(null, "Couldn't find authentication method \"" + method + "\".", "Error", JOptionPane.ERROR_MESSAGE);
 
                 ExtendedList<Objective> objectiveList = new ExtendedArrayList<Objective>();
-                if (objective.isSelected()) objectiveList.add(new ObjectiveCompleted((Integer) completedSpinner.getValue()));
+                if (objective.isSelected())
+                    objectiveList.add(new ObjectiveCompleted((Integer) completedSpinner.getValue()));
 
                 ExtendedList<AccountOutput> outputList = new ExtendedArrayList<AccountOutput>();
                 if (outputFile.getText() != null && outputFile.getText().trim().length() > 0)
@@ -331,36 +339,36 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
             }
         });
         pl.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        int returnVal = chooser.showOpenDialog(UserInterface.this);
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int returnVal = chooser.showOpenDialog(UserInterface.this);
 
-                        if (returnVal == JFileChooser.APPROVE_OPTION) {
-                            File file = chooser.getSelectedFile();
-                            passwordsFile.setText(file.getAbsolutePath());
-                        }
+                if (returnVal == JFileChooser.APPROVE_OPTION) {
+                    File file = chooser.getSelectedFile();
+                    passwordsFile.setText(file.getAbsolutePath());
+                }
             }
         });
         hl.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        int returnVal = chooser.showOpenDialog(UserInterface.this);
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int returnVal = chooser.showOpenDialog(UserInterface.this);
 
-                        if (returnVal == JFileChooser.APPROVE_OPTION) {
-                            File file = chooser.getSelectedFile();
-                            httpProxies.setText(file.getAbsolutePath());
-                        }
-                    }
+                if (returnVal == JFileChooser.APPROVE_OPTION) {
+                    File file = chooser.getSelectedFile();
+                    httpProxies.setText(file.getAbsolutePath());
+                }
+            }
         });
         sl.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        int returnVal = chooser.showOpenDialog(UserInterface.this);
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                int returnVal = chooser.showOpenDialog(UserInterface.this);
 
-                        if (returnVal == JFileChooser.APPROVE_OPTION) {
-                            File file = chooser.getSelectedFile();
-                            socksProxies.setText(file.getAbsolutePath());
-                        }
+                if (returnVal == JFileChooser.APPROVE_OPTION) {
+                    File file = chooser.getSelectedFile();
+                    socksProxies.setText(file.getAbsolutePath());
+                }
             }
         });
         ol.addActionListener(new ActionListener() {
@@ -416,6 +424,36 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
                 completedSpinner.setVisible(objective.isSelected());
             }
         });
+    }
+
+    public void setupConfiguration() {
+        String apiName = this.api.getSelectedItem().toString();
+        for (AuthenticationService thisService : EggCrack.getInstance().listAuthenticationServices()) {
+            if (thisService.getName().equals(apiName)) {
+                // See if this service has any configuration.
+                if (thisService.getConfiguration() == null) break;
+
+                final List<ServiceConfiguration.Option> options = thisService.getConfiguration().getOptions();
+                if (options == null || options.size() <= 0) break;
+
+                configureButton.setEnabled(activeSession == null || activeSession.isRunning());
+
+                for (ActionListener al : configureButton.getActionListeners()) configureButton.removeActionListener(al);
+                configureButton.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        ConfigurationInterface configurationInterface = new ConfigurationInterface();
+                        for (ServiceConfiguration.Option option : options) configurationInterface.addOption(option);
+                        configurationInterface.setLocationRelativeTo(UserInterface.this);
+                        configurationInterface.setVisible(true);
+                    }
+                });
+
+                return;
+            }
+        }
+
+        configureButton.setEnabled(false);
     }
 
     public static void main(String[] args) throws
@@ -560,13 +598,14 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
     }
 
     @Override
-    public void started(SessionListener.Step step) {
+    public void started(Step step) {
         if (step == Step.CRACKING) {
             this.tabs.setSelectedIndex(1);
 
             EventQueue.invokeLater(new Runnable() {
                 @Override
                 public void run() {
+                    configureButton.setEnabled(false);
                     proxiesInterface.setVisible(false);
                     clearRows();
                 }
@@ -575,9 +614,13 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
             EventQueue.invokeLater(new Runnable() {
                 @Override
                 public void run() {
+                    proxiesInterface.setLocationRelativeTo(UserInterface.this);
                     proxiesInterface.setVisible(true);
-                    if(activeSession != null && proxiesInterface.isCancelled())
+
+                    if (proxiesInterface.isCancelled()) {
+                        EggCrack.LOGGER.info("Proxy checking cancelled.");
                         activeSession.setRunning(false);
+                    }
                 }
             });
         }
@@ -590,7 +633,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
             return;
         }
 
-        this.progress.setValue((int) ((float)this.progress.getMaximum() * progress));
+        this.progress.setValue((int) ((float) this.progress.getMaximum() * progress));
 
         if (availableProxies > 0)
             this.proxiescnt.setText(String.valueOf(availableProxies));
@@ -620,16 +663,14 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
     /**
      * Used from
      * http://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java
-     *
+     * <p/>
      * Convert a millisecond duration to a string format
      *
      * @param millis A duration to convert to a string form
      * @return A string of the form "X Days Y Hours Z Minutes A Seconds".
      */
-    public static String getDurationBreakdown(long millis)
-    {
-        if(millis < 0)
-        {
+    public static String getDurationBreakdown(long millis) {
+        if (millis < 0) {
             throw new IllegalArgumentException("Duration must be greater than zero!");
         }
 
@@ -647,11 +688,13 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
         sb.append(hours);
         sb.append(hours == 1 ? " hour, " : " hours, ");
         sb.append(minutes);
-        sb.append(minutes == 1 ? " minute, " : " minutes, ");;
+        sb.append(minutes == 1 ? " minute, " : " minutes, ");
+        ;
         sb.append(seconds);
-        sb.append(seconds == 1 ? " second" : " seconds");;
+        sb.append(seconds == 1 ? " second" : " seconds");
+        ;
 
-        return(sb.toString());
+        return (sb.toString());
     }
 
     @Override
@@ -659,12 +702,416 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
         EventQueue.invokeLater(new Runnable() {
             @Override
             public void run() {
+                setupConfiguration();
+
                 UserInterface.this.tabs.setSelectedIndex(1);
                 emptyRows();
                 JOptionPane.showMessageDialog(UserInterface.this, "Cracking completed.", "EggCrack", JOptionPane.INFORMATION_MESSAGE);
                 start.setText("Start");
             }
         });
+    }
+
+    {
+// GUI initializer generated by IntelliJ IDEA GUI Designer
+// >>> IMPORTANT!! <<<
+// DO NOT EDIT OR ADD ANY CODE HERE!
+        $$$setupUI$$$();
+    }
+
+    /**
+     * Method generated by IntelliJ IDEA GUI Designer
+     * >>> IMPORTANT!! <<<
+     * DO NOT edit this method OR call it in your code!
+     *
+     * @noinspection ALL
+     */
+    private void $$$setupUI$$$() {
+        contentPane = new JPanel();
+        contentPane.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
+        contentPane.setBackground(new Color(-1));
+        final JPanel panel1 = new JPanel();
+        panel1.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panel1.setBackground(new Color(-1));
+        contentPane.add(panel1, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, new Dimension(500, 600), new Dimension(500, 600), new Dimension(500, 600), 0, false));
+        tabs = new JTabbedPane();
+        tabs.setBackground(new Color(-1));
+        tabs.setForeground(new Color(-1));
+        panel1.add(tabs, new GridConstraints(0, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(200, 200), null, 0, false));
+        final JPanel panel2 = new JPanel();
+        panel2.setLayout(new GridLayoutManager(8, 2, new Insets(10, 10, 10, 10), -1, -1));
+        panel2.setBackground(new Color(-1));
+        tabs.addTab("Control", panel2);
+        final JPanel panel3 = new JPanel();
+        panel3.setLayout(new GridLayoutManager(2, 4, new Insets(0, 0, 15, 0), -1, -1));
+        panel3.setBackground(new Color(-1));
+        panel2.add(panel3, new GridConstraints(0, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        cracking = new JRadioButton();
+        cracking.setSelected(true);
+        cracking.setText("Cracking");
+        panel3.add(cracking, new GridConstraints(1, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        checking = new JRadioButton();
+        checking.setText("Checking");
+        panel3.add(checking, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel4 = new JPanel();
+        panel4.setLayout(new BorderLayout(10, 0));
+        panel4.setBackground(new Color(-1));
+        panel3.add(panel4, new GridConstraints(0, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final JLabel label1 = new JLabel();
+        label1.setText("Login API:");
+        panel4.add(label1, BorderLayout.WEST);
+        api = new JComboBox();
+        api.setForeground(new Color(-1));
+        final DefaultComboBoxModel defaultComboBoxModel1 = new DefaultComboBoxModel();
+        defaultComboBoxModel1.addElement("Minecraft Yggdrasil Authentication");
+        api.setModel(defaultComboBoxModel1);
+        panel4.add(api, BorderLayout.CENTER);
+        configureButton = new JButton();
+        configureButton.setEnabled(false);
+        configureButton.setText("Configure...");
+        panel4.add(configureButton, BorderLayout.EAST);
+        final Spacer spacer1 = new Spacer();
+        panel2.add(spacer1, new GridConstraints(6, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        final JPanel panel5 = new JPanel();
+        panel5.setLayout(new GridLayoutManager(2, 3, new Insets(5, 10, 5, 2), -1, -1));
+        panel5.setBackground(new Color(-1));
+        panel2.add(panel5, new GridConstraints(2, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        panel5.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(-6710887)), "Credentials", TitledBorder.CENTER, TitledBorder.TOP, new Font("Levenim MT", panel5.getFont().getStyle(), panel5.getFont().getSize()), new Color(-16777216)));
+        final JPanel panel6 = new JPanel();
+        panel6.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel6.setBackground(new Color(-1));
+        panel5.add(panel6, new GridConstraints(0, 0, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        ulbl = new JLabel();
+        ulbl.setText("Usernames:");
+        panel6.add(ulbl, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(100, -1), new Dimension(100, -1), new Dimension(100, -1), 0, false));
+        usernamesFile = new JFormattedTextField();
+        usernamesFile.setEditable(false);
+        usernamesFile.setText("");
+        panel6.add(usernamesFile, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        ul = new JButton();
+        ul.setText("Load");
+        panel6.add(ul, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel7 = new JPanel();
+        panel7.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel7.setBackground(new Color(-1));
+        panel5.add(panel7, new GridConstraints(1, 0, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        plbl = new JLabel();
+        plbl.setText("Passwords:");
+        panel7.add(plbl, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(100, -1), new Dimension(100, -1), new Dimension(100, -1), 0, false));
+        passwordsFile = new JFormattedTextField();
+        passwordsFile.setEditable(false);
+        panel7.add(passwordsFile, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        pl = new JButton();
+        pl.setText("Load");
+        panel7.add(pl, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel8 = new JPanel();
+        panel8.setLayout(new GridLayoutManager(3, 1, new Insets(5, 10, 5, 2), -1, -1));
+        panel8.setBackground(new Color(-1));
+        panel2.add(panel8, new GridConstraints(3, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        panel8.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(-6710887)), "Proxies", TitledBorder.CENTER, TitledBorder.TOP, new Font("Levenim MT", panel8.getFont().getStyle(), panel8.getFont().getSize()), new Color(-16777216)));
+        final JPanel panel9 = new JPanel();
+        panel9.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel9.setBackground(new Color(-1));
+        panel8.add(panel9, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final JLabel label2 = new JLabel();
+        label2.setText("HTTP Proxies:");
+        panel9.add(label2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(100, -1), new Dimension(100, -1), new Dimension(100, -1), 0, false));
+        httpProxies = new JFormattedTextField();
+        httpProxies.setEditable(false);
+        httpProxies.setText("");
+        panel9.add(httpProxies, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        hl = new JButton();
+        hl.setText("Load");
+        panel9.add(hl, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel10 = new JPanel();
+        panel10.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel10.setBackground(new Color(-1));
+        panel8.add(panel10, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final JLabel label3 = new JLabel();
+        label3.setText("SOCKS Proxies:");
+        panel10.add(label3, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(100, -1), new Dimension(100, -1), new Dimension(100, -1), 0, false));
+        socksProxies = new JFormattedTextField();
+        socksProxies.setEditable(false);
+        socksProxies.setText("");
+        panel10.add(socksProxies, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        sl = new JButton();
+        sl.setText("Load");
+        panel10.add(sl, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        pnl = new JPanel();
+        pnl.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        pnl.setBackground(new Color(-1));
+        panel8.add(pnl, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, new Dimension(-1, 28), new Dimension(-1, 28), new Dimension(-1, 28), 0, false));
+        checkProxies = new JCheckBox();
+        checkProxies.setBackground(new Color(-1));
+        checkProxies.setSelected(false);
+        checkProxies.setText("Check proxies");
+        pnl.add(checkProxies, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, new Dimension(100, -1), new Dimension(100, -1), new Dimension(100, -1), 0, false));
+        checkLbl = new JLabel();
+        checkLbl.setText("Timeout (ms):");
+        pnl.add(checkLbl, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(100, -1), new Dimension(100, -1), new Dimension(100, -1), 0, false));
+        proxyTimeout = new JSpinner();
+        proxyTimeout.setEnabled(true);
+        pnl.add(proxyTimeout, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel11 = new JPanel();
+        panel11.setLayout(new GridLayoutManager(3, 4, new Insets(5, 10, 5, 2), -1, -1));
+        panel11.setBackground(new Color(-1));
+        panel2.add(panel11, new GridConstraints(4, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        panel11.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(-6710887)), "Methodology", TitledBorder.CENTER, TitledBorder.TOP, new Font("Levenim MT", panel11.getFont().getStyle(), panel11.getFont().getSize()), new Color(-16777216)));
+        final JPanel panel12 = new JPanel();
+        panel12.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panel12.setBackground(new Color(-1));
+        panel11.add(panel12, new GridConstraints(0, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final JLabel label4 = new JLabel();
+        label4.setText("Max Threads:");
+        panel12.add(label4, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(100, -1), new Dimension(100, -1), new Dimension(100, -1), 0, false));
+        maxthreads = new JSpinner();
+        panel12.add(maxthreads, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel13 = new JPanel();
+        panel13.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel13.setBackground(new Color(-1));
+        panel11.add(panel13, new GridConstraints(1, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, new Dimension(-1, 28), new Dimension(-1, 28), new Dimension(-1, 28), 0, false));
+        objective = new JCheckBox();
+        objective.setBackground(new Color(-1));
+        objective.setSelected(false);
+        objective.setText("Objective");
+        panel13.add(objective, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, new Dimension(100, -1), new Dimension(100, -1), new Dimension(100, -1), 0, false));
+        completedLbl = new JLabel();
+        completedLbl.setText("Completed:");
+        completedLbl.setVisible(true);
+        panel13.add(completedLbl, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(100, -1), new Dimension(100, -1), new Dimension(100, -1), 0, false));
+        completedSpinner = new JSpinner();
+        completedSpinner.setEnabled(true);
+        panel13.add(completedSpinner, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel14 = new JPanel();
+        panel14.setLayout(new GridLayoutManager(2, 1, new Insets(5, 10, 5, 2), -1, -1));
+        panel14.setBackground(new Color(-1));
+        panel2.add(panel14, new GridConstraints(5, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        panel14.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(-6710887)), "Output", TitledBorder.CENTER, TitledBorder.TOP, new Font("Levenim MT", panel14.getFont().getStyle(), panel14.getFont().getSize()), new Color(-16777216)));
+        final JPanel panel15 = new JPanel();
+        panel15.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel15.setBackground(new Color(-1));
+        panel14.add(panel15, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        outputFile = new JFormattedTextField();
+        outputFile.setEditable(false);
+        panel15.add(outputFile, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        ol = new JButton();
+        ol.setText("...");
+        panel15.add(ol, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        oc = new JCheckBox();
+        oc.setBackground(new Color(-1));
+        oc.setSelected(true);
+        oc.setText("Output File:");
+        panel15.add(oc, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, new Dimension(100, -1), new Dimension(100, -1), new Dimension(100, -1), 0, false));
+        final JPanel panel16 = new JPanel();
+        panel16.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panel16.setBackground(new Color(-1));
+        panel14.add(panel16, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        submiturl = new JFormattedTextField();
+        submiturl.setEditable(true);
+        submiturl.setText("http://myapi.com/submit.php?user=$user&password=$pass");
+        panel16.add(submiturl, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        sc = new JCheckBox();
+        sc.setBackground(new Color(-1));
+        sc.setSelected(false);
+        sc.setText("Submit:");
+        panel16.add(sc, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, new Dimension(100, -1), new Dimension(100, -1), new Dimension(100, -1), 0, false));
+        final JPanel panel17 = new JPanel();
+        panel17.setLayout(new GridLayoutManager(1, 3, new Insets(0, 0, 0, 0), -1, -1));
+        panel17.setBackground(new Color(-1));
+        panel2.add(panel17, new GridConstraints(7, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        start = new JButton();
+        start.setText("Start");
+        panel17.add(start, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, new Dimension(100, -1), new Dimension(100, -1), new Dimension(100, -1), 0, false));
+        final Spacer spacer2 = new Spacer();
+        panel17.add(spacer2, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, 1, null, null, null, 0, false));
+        exit = new JButton();
+        exit.setText("Exit");
+        panel17.add(exit, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, new Dimension(100, -1), new Dimension(100, -1), new Dimension(100, -1), 0, false));
+        final JPanel panel18 = new JPanel();
+        panel18.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
+        panel18.setBackground(new Color(-1));
+        tabs.addTab("Status", panel18);
+        final JPanel panel19 = new JPanel();
+        panel19.setLayout(new GridLayoutManager(7, 1, new Insets(10, 10, 1, 10), -1, -1));
+        panel19.setBackground(new Color(-10066330));
+        panel18.add(panel19, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final JPanel panel20 = new JPanel();
+        panel20.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panel20.setAutoscrolls(true);
+        panel20.setBackground(new Color(-10066330));
+        panel20.setForeground(new Color(-3355444));
+        panel19.add(panel20, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final JLabel label5 = new JLabel();
+        label5.setFont(new Font("Arial", Font.BOLD, 13));
+        label5.setForeground(new Color(-3355444));
+        label5.setText("Current Threads:");
+        panel20.add(label5, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(120, -1), new Dimension(120, -1), new Dimension(120, -1), 0, false));
+        thdcount = new JLabel();
+        thdcount.setForeground(new Color(-3355444));
+        thdcount.setText("0");
+        panel20.add(thdcount, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel21 = new JPanel();
+        panel21.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panel21.setAutoscrolls(true);
+        panel21.setBackground(new Color(-10066330));
+        panel21.setForeground(new Color(-3355444));
+        panel19.add(panel21, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final JLabel label6 = new JLabel();
+        label6.setFont(new Font("Arial", Font.BOLD, 13));
+        label6.setForeground(new Color(-3355444));
+        label6.setText("Accounts Cracked:");
+        panel21.add(label6, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(120, -1), new Dimension(120, -1), new Dimension(120, -1), 0, false));
+        crackedcnt = new JLabel();
+        crackedcnt.setForeground(new Color(-3355444));
+        crackedcnt.setText("0/0");
+        panel21.add(crackedcnt, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel22 = new JPanel();
+        panel22.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panel22.setAutoscrolls(true);
+        panel22.setBackground(new Color(-10066330));
+        panel22.setForeground(new Color(-3355444));
+        panel19.add(panel22, new GridConstraints(2, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final JLabel label7 = new JLabel();
+        label7.setFont(new Font("Arial", Font.BOLD, 13));
+        label7.setForeground(new Color(-3355444));
+        label7.setText("Accounts Failed:");
+        panel22.add(label7, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(120, -1), new Dimension(120, -1), new Dimension(120, -1), 0, false));
+        failedcnt = new JLabel();
+        failedcnt.setForeground(new Color(-3355444));
+        failedcnt.setText("0/0");
+        panel22.add(failedcnt, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel23 = new JPanel();
+        panel23.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panel23.setAutoscrolls(true);
+        panel23.setBackground(new Color(-10066330));
+        panel23.setForeground(new Color(-3355444));
+        panel19.add(panel23, new GridConstraints(4, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final JLabel label8 = new JLabel();
+        label8.setFont(new Font("Arial", Font.BOLD, 13));
+        label8.setForeground(new Color(-3355444));
+        label8.setText("Attempts/sec:");
+        panel23.add(label8, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(120, -1), new Dimension(120, -1), new Dimension(120, -1), 0, false));
+        tps = new JLabel();
+        tps.setForeground(new Color(-3355444));
+        tps.setText("0");
+        panel23.add(tps, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        progress = new JProgressBar();
+        panel19.add(progress, new GridConstraints(5, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel24 = new JPanel();
+        panel24.setLayout(new GridLayoutManager(1, 2, new Insets(0, 0, 0, 0), -1, -1));
+        panel24.setAutoscrolls(true);
+        panel24.setBackground(new Color(-10066330));
+        panel24.setForeground(new Color(-3355444));
+        panel19.add(panel24, new GridConstraints(3, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final JLabel label9 = new JLabel();
+        label9.setFont(new Font("Arial", Font.BOLD, 13));
+        label9.setForeground(new Color(-3355444));
+        label9.setText("Available Proxies:");
+        panel24.add(label9, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, new Dimension(120, -1), new Dimension(120, -1), new Dimension(120, -1), 0, false));
+        proxiescnt = new JLabel();
+        proxiescnt.setForeground(new Color(-3355444));
+        proxiescnt.setText("-");
+        panel24.add(proxiescnt, new GridConstraints(0, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        eta = new JLabel();
+        eta.setFont(new Font("Arial", Font.BOLD, 13));
+        eta.setForeground(new Color(-3355444));
+        eta.setText("");
+        panel19.add(eta, new GridConstraints(6, 0, 1, 1, GridConstraints.ANCHOR_NORTH, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, new Dimension(500, -1), 0, false));
+        scroll = new JScrollPane();
+        scroll.setAutoscrolls(true);
+        scroll.setBackground(new Color(-1));
+        panel18.add(scroll, new GridConstraints(1, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        table1 = new JTable();
+        table1.setGridColor(new Color(-1));
+        table1.setIntercellSpacing(new Dimension(0, 0));
+        table1.setMinimumSize(new Dimension(30, 80));
+        table1.setRequestFocusEnabled(false);
+        table1.setRowMargin(0);
+        table1.setRowSelectionAllowed(false);
+        scroll.setViewportView(table1);
+        final JPanel panel25 = new JPanel();
+        panel25.setLayout(new GridLayoutManager(8, 4, new Insets(20, 20, 20, 20), -1, -1));
+        panel25.setBackground(new Color(-1));
+        tabs.addTab("About", panel25);
+        final JPanel panel26 = new JPanel();
+        panel26.setLayout(new GridLayoutManager(5, 4, new Insets(0, 0, 0, 0), -1, -1));
+        panel26.setBackground(new Color(-1));
+        panel25.add(panel26, new GridConstraints(0, 0, 6, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final JLabel label10 = new JLabel();
+        label10.setFont(new Font(label10.getFont().getName(), label10.getFont().getStyle(), 28));
+        label10.setText("EggCrack");
+        panel26.add(label10, new GridConstraints(0, 0, 1, 4, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label11 = new JLabel();
+        label11.setFocusable(false);
+        label11.setFont(new Font(label11.getFont().getName(), Font.BOLD, 14));
+        label11.setText("Version:");
+        panel26.add(label11, new GridConstraints(1, 0, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        versionLabel = new JLabel();
+        versionLabel.setFocusable(false);
+        versionLabel.setFont(new Font(versionLabel.getFont().getName(), versionLabel.getFont().getStyle(), 14));
+        versionLabel.setText("2.0");
+        panel26.add(versionLabel, new GridConstraints(1, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label12 = new JLabel();
+        label12.setFocusable(false);
+        label12.setFont(new Font(label12.getFont().getName(), Font.BOLD, 14));
+        label12.setText("Release Date:");
+        panel26.add(label12, new GridConstraints(2, 0, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label13 = new JLabel();
+        label13.setFocusable(false);
+        label13.setFont(new Font(label13.getFont().getName(), label13.getFont().getStyle(), 14));
+        label13.setText("October 10th, 2015");
+        panel26.add(label13, new GridConstraints(2, 2, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label14 = new JLabel();
+        label14.setFocusable(false);
+        label14.setFont(new Font(label14.getFont().getName(), Font.BOLD, 14));
+        label14.setText("Author:");
+        panel26.add(label14, new GridConstraints(3, 0, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label15 = new JLabel();
+        label15.setFocusable(false);
+        label15.setFont(new Font(label15.getFont().getName(), label15.getFont().getStyle(), 14));
+        label15.setText("Manevolent");
+        panel26.add(label15, new GridConstraints(3, 2, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label16 = new JLabel();
+        label16.setFocusable(false);
+        label16.setFont(new Font(label16.getFont().getName(), Font.BOLD, 14));
+        label16.setText("License:");
+        panel26.add(label16, new GridConstraints(4, 0, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JLabel label17 = new JLabel();
+        label17.setFocusable(false);
+        label17.setFont(new Font(label17.getFont().getName(), label17.getFont().getStyle(), 14));
+        label17.setText("GNU GPL v2");
+        panel26.add(label17, new GridConstraints(4, 2, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final Spacer spacer3 = new Spacer();
+        panel25.add(spacer3, new GridConstraints(7, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
+        final JPanel panel27 = new JPanel();
+        panel27.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
+        panel27.setBackground(new Color(-1));
+        panel25.add(panel27, new GridConstraints(6, 0, 1, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        panel27.setBorder(BorderFactory.createTitledBorder("    "));
+        aboutPanel = new JLabel();
+        aboutPanel.setText("<html> <p>I'm currently an active member of <b>Team Lixo</b>. You can see <br/>our videos at <a href=\"https://youtube.com/teamlixo/\">https://youtube.com/teamlixo</a></p> <br/><br/> <p> EggCrack is now an open-source project! Come check us out on GitHub:<br/> <a href=\"https://github.com/Manevolent/EggCrack\">https://github.com/Manevolent/EggCrack</a> </p>\n<br/><br/>\n<p>EggCrack is running in GUI mode. If you would like to run\nEggCrack from<br/> the console, use the <i>-console</i> flag.</p>");
+        panel27.add(aboutPanel, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        final JPanel panel28 = new JPanel();
+        panel28.setLayout(new GridLayoutManager(1, 1, new Insets(0, 0, 0, 0), -1, -1));
+        panel28.setBackground(new Color(-1));
+        contentPane.add(panel28, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
+        final HeaderImage headerImage1 = new HeaderImage();
+        panel28.add(headerImage1, new GridConstraints(0, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, new Dimension(500, 100), null, 0, false));
+        checkLbl.setLabelFor(maxthreads);
+        label4.setLabelFor(maxthreads);
+        completedLbl.setLabelFor(maxthreads);
+        ButtonGroup buttonGroup;
+        buttonGroup = new ButtonGroup();
+        buttonGroup.add(checking);
+        buttonGroup.add(checking);
+        buttonGroup.add(cracking);
+    }
+
+    /**
+     * @noinspection ALL
+     */
+    public JComponent $$$getRootComponent$$$() {
+        return contentPane;
     }
 
     private class Row {

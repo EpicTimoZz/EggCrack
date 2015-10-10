@@ -2,6 +2,7 @@ package net.teamlixo.eggcrack.authentication;
 
 import net.teamlixo.eggcrack.account.Account;
 import net.teamlixo.eggcrack.account.AuthenticatedAccount;
+import net.teamlixo.eggcrack.authentication.configuration.ServiceConfiguration;
 import net.teamlixo.eggcrack.credential.Credential;
 
 import java.net.Proxy;
@@ -32,5 +33,11 @@ public interface AuthenticationService {
      * @return Available proxies.
      */
     public int unavailableProxies();
+
+    /**
+     * Gets the configuration for this service.
+     * @return Configuration.
+     */
+    public ServiceConfiguration getConfiguration();
 
 }

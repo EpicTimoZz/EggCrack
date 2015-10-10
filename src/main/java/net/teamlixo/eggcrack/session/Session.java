@@ -101,11 +101,10 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
                 long lastSecond = 0L;
                 @Override
                 public boolean run(float progress) {
-                    if (sessionListener != null) sessionListener.update(progress, tracker, proxyList.size());
-
                     long time = System.currentTimeMillis();
                     if (time - lastSecond >= 1000L) {
                         lastSecond = time;
+                        if (sessionListener != null) sessionListener.update(progress, tracker, proxyList.size());
                         EggCrack.LOGGER.info((int) (Math.floor((double)progress * 1000d) / 10d) + "% complete.");
                     }
                     return running;
@@ -193,6 +192,8 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
             futureIterator.remove();
         }
 
+        setRunning(false);
+
         if (sessionListener != null) sessionListener.completed();
 
         EggCrack.LOGGER.info("Session complete. Runtime: " + (tracker.elapsedMilliseconds() / 1000f) + " seconds.");
@@ -248,6 +249,10 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
 
     public int getTotalProxies() {
         return proxyList.size();
+    }
+
+    public boolean isRunning() {
+        return running;
     }
 
     private interface FutureRunnable {

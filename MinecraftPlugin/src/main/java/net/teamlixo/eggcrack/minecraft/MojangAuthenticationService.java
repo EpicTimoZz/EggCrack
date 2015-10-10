@@ -1,6 +1,5 @@
 package net.teamlixo.eggcrack.minecraft;
 
-import com.mojang.authlib.Agent;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.UserAuthentication;
 import net.teamlixo.eggcrack.EggCrack;
@@ -8,14 +7,15 @@ import net.teamlixo.eggcrack.account.Account;
 import net.teamlixo.eggcrack.account.AuthenticatedAccount;
 import net.teamlixo.eggcrack.account.output.AttemptedAccount;
 import net.teamlixo.eggcrack.authentication.AuthenticationException;
+import net.teamlixo.eggcrack.authentication.configuration.ServiceConfiguration;
 import net.teamlixo.eggcrack.credential.password.PasswordAuthenticationService;
 import net.teamlixo.eggcrack.credential.password.PasswordCredential;
 import net.teamlixo.eggcrack.timer.IntervalTimer;
 import net.teamlixo.eggcrack.timer.Timer;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.*;
 import java.util.*;
 
 /**
@@ -37,14 +37,20 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
     private final Map<InetAddress, Timer> intervalMap = new HashMap<InetAddress, Timer>();
     private final List<Proxy> unavailableProxies = new ArrayList<Proxy>();
 
-    public MojangAuthenticationService() {
-        super("Yggdrasil Authentication");
-        this.authenticationFactory = new MojangAuthenticationFactory(Agent.MINECRAFT);
-    }
+    private final ServiceConfiguration.Option<Boolean> checkCape;
+    private final ServiceConfiguration.Option<Boolean> disbleProxies;
 
     public MojangAuthenticationService(String name, AuthenticationFactory authenticationFactory) {
         super(name);
         this.authenticationFactory = authenticationFactory;
+
+        this.checkCape = getConfiguration().register(
+                new ServiceConfiguration.Option<Boolean>("Check for cape", Boolean.FALSE)
+        );
+
+        this.disbleProxies = getConfiguration().register(
+                new ServiceConfiguration.Option<Boolean>("Proxy timeout", Boolean.TRUE)
+        );
     }
 
     @Override
@@ -84,14 +90,16 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
 
         Timer timer = null;
         synchronized (intervalMap) { //Not sure if HashMaps are thread-safe.
-            if (!intervalMap.containsKey(proxyAddress))
-                intervalMap.put(proxyAddress, new IntervalTimer(interval, IntervalTimer.RateWindow.SECOND));
-            timer = intervalMap.get(proxyAddress);
+            if (disbleProxies.getValue()) {
+                if (!intervalMap.containsKey(proxyAddress))
+                    intervalMap.put(proxyAddress, new IntervalTimer(interval, IntervalTimer.RateWindow.SECOND));
+                timer = intervalMap.get(proxyAddress);
 
-            if (proxy.type() != Proxy.Type.DIRECT && !timer.isReady()) {
-                if (!unavailableProxies.contains(proxy)) unavailableProxies.add(proxy);
-                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.BAD_PROXY);
-            } else unavailableProxies.remove(proxy);
+                if (proxy.type() != Proxy.Type.DIRECT && !timer.isReady()) {
+                    if (!unavailableProxies.contains(proxy)) unavailableProxies.add(proxy);
+                    throw new AuthenticationException(AuthenticationException.AuthenticationFailure.BAD_PROXY);
+                } else unavailableProxies.remove(proxy);
+            }
         }
         EggCrack.LOGGER.finer("[Authentication] " + username + ": using proxy [type=" + proxy.type().name() + ",address=" + proxyAddress + "].");
 
@@ -112,6 +120,30 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
                 throw new AuthenticationException(AuthenticationException.AuthenticationFailure.NO_PROFILES);
             GameProfile profile = userAuthentication.getSelectedProfile();
             if (profile == null) profile = profiles[0]; //Select first profile on the account.
+
+            // See: http://www.mpgh.net/forum/showthread.php?t=1036349
+            if (checkCape.getValue()) {
+                for (int i = 0; i < 10; i ++) { // Try 10 times to grab a cape.
+                    try {
+                        String url = String.format(
+                                "http://s3.amazonaws.com/MinecraftCloaks/%s.png",
+                                URLEncoder.encode(profile.getName(), "UTF8")
+                        );
+
+                        HttpURLConnection urlConnection = (HttpURLConnection) URI.create(url).toURL().openConnection(proxy);
+                        if (urlConnection.getResponseCode() / 100 != 2)
+                            throw new AuthenticationException(
+                                    AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT
+                            );
+
+                        break;
+                    } catch (UnsupportedEncodingException e) {
+                        throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT);
+                    } catch (IOException e) {
+                        // Retry.
+                    }
+                }
+            }
 
             return new AuthenticatedAccount(
                     username, //Account username

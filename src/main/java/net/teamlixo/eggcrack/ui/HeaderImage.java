@@ -7,9 +7,13 @@ import java.io.IOException;
 
 public class HeaderImage extends JComponent {
     private Image image;
-    public HeaderImage() throws IOException {
+    public HeaderImage() {
         this.setSize(new Dimension(500, 100));
-        image = ImageIO.read(this.getClass().getResourceAsStream("/net/teamlixo/eggcrack/eggcrack_2.0.png"));
+        try {
+            image = ImageIO.read(this.getClass().getResourceAsStream("/net/teamlixo/eggcrack/eggcrack_2.0.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

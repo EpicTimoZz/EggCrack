@@ -29,6 +29,6 @@ public final class MinecraftPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() throws PluginLoadException {
-
+        EggCrack.getInstance().unregisterAuthenticationService("Minecraft");
     }
 }

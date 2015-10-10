@@ -107,7 +107,7 @@ public final class Main {
         final boolean guiAvailable = Desktop.isDesktopSupported() && !GraphicsEnvironment.isHeadless();
         boolean guiEnabled = !optionSet.has(consoleArgument);
 
-        if (configuration.isUpdateEnabled() && (branch.equals("beta") || branch.equals("stable"))) {
+        if (configuration.isUpdateEnabled()) {
             EggCrack.LOGGER.fine("Checking for updates to build #" + version + " on branch " +  branch + "...");
 
             try {
