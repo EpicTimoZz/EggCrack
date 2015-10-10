@@ -21,10 +21,7 @@ EggCrack originally gained its popularity on Nodus Forums back in 2013, when the
 <ul>
 <li><a href="https://github.com/Manevolent/EggCrack/archive/master.zip">Latest release</a></li>
 </ul>
-<p>If you are an end-user running EggCrack, everything you need is in the <b>release</b> folder.</p>
-<br/><br/>
-<b>Bleeding edge</b><br/>
-Bleeding edge builds, or most recent builds, are available by cloning the <i>master</i> branch. <br/>
+<p>If you are an end-user running EggCrack, everything you need is in the <b>release</b> folder. If an update is available, the program will automatically alert you.</p>
 </p>
 
 <h2>Bugs and Issues</h2>
