@@ -74,6 +74,7 @@ public final class Main {
         ArgumentAcceptingOptionSpec threadsArgument = optionsParser.accepts("threads").withRequiredArg().ofType(Integer.class).defaultsTo(Integer.valueOf(32));
         ArgumentAcceptingOptionSpec intervalArgument = optionsParser.accepts("interval").withRequiredArg().ofType(Integer.class).defaultsTo(Integer.valueOf(10));
         ArgumentAcceptingOptionSpec checkArgument = optionsParser.accepts("checkUrl").withOptionalArg().ofType(String.class);
+        ArgumentAcceptingOptionSpec proxyTimeout = optionsParser.accepts("proxyTimeout").withOptionalArg().ofType(Integer.class);
 
         ArgumentAcceptingOptionSpec completedObjectiveArgument = optionsParser.accepts("objectiveCompleted").withOptionalArg().ofType(Integer.class);
         ArgumentAcceptingOptionSpec timeObjectiveArgument = optionsParser.accepts("objectiveSeconds").withOptionalArg().ofType(Integer.class);
@@ -365,7 +366,8 @@ public final class Main {
                 objectiveList,
                 outputList,
                 tracker,
-                checkUrl
+                checkUrl,
+                optionSet.has(proxyTimeout) ? (Integer) optionSet.valueOf(proxyTimeout) : 1000
         );
 
         //Run EggCrack.

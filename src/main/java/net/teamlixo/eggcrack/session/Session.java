@@ -35,6 +35,8 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
 
     private final Tracker tracker;
 
+    private final int proxyTimeout;
+
     private SessionListener sessionListener;
 
     private final URL checkUrl;
@@ -49,7 +51,8 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
                    ExtendedList<Objective> objectiveList,
                    ExtendedList<AccountOutput> outputList,
                    Tracker tracker,
-                   URL checkUrl) {
+                   URL checkUrl,
+                   int proxyTimeout) {
         this.executorService = executorService;
         this.authenticationService = authenticationService;
 
@@ -63,6 +66,7 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
         this.tracker.setTotal(accountList.size());
 
         this.checkUrl = checkUrl;
+        this.proxyTimeout = proxyTimeout;
     }
 
     public void setListener(SessionListener sessionListener) {
@@ -91,7 +95,8 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
                                     new RunnableProxyChecker(
                                             proxyIterator.next(),
                                             checkUrl,
-                                            this
+                                            this,
+                                            proxyTimeout
                                     )
                             )
                     );

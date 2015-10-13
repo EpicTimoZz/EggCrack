@@ -303,7 +303,8 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
                             objectiveList,
                             outputList,
                             tracker,
-                            checkProxies.isSelected() ? URI.create("http://google.com/").toURL() : null
+                            checkProxies.isSelected() ? URI.create("http://google.com/").toURL() : null,
+                            checkProxies.isSelected() ? Integer.parseInt(proxyTimeout.getValue().toString()) : 0
                     );
 
                     session.setListener(UserInterface.this);
