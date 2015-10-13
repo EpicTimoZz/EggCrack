@@ -428,7 +428,9 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
     }
 
     public void setupConfiguration() {
-        String apiName = this.api.getSelectedItem().toString();
+        String apiName = this.api.getSelectedItem() != null ? this.api.getSelectedItem().toString() : null;
+        if (apiName == null) return;
+
         for (AuthenticationService thisService : EggCrack.getInstance().listAuthenticationServices()) {
             if (thisService.getName().equals(apiName)) {
                 // See if this service has any configuration.
