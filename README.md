@@ -15,6 +15,8 @@ EggCrack originally gained its popularity on Nodus Forums back in 2013, when the
 <li>Command-line interface or windowed interface for both server and desktop use</li>
 </ul>
 
+![EggCrack](http://i.imgur.com/hibvJB4.png)
+
 <h2>Download</h2>
 <p>
 <b>Releases</b><br/>
