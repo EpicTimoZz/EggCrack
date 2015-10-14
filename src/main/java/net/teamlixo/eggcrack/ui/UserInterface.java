@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 
 public class UserInterface extends JDialog implements AccountListener, SessionListener {
     private JPanel contentPane;
@@ -84,6 +85,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
     private JLabel completedLbl;
     private JSpinner completedSpinner;
     private JButton configureButton;
+    private JCheckBox enableConsoleDebuggingCheckBox;
     private ProxiesInterface proxiesInterface = new ProxiesInterface();
 
     private volatile Session activeSession;
@@ -423,6 +425,12 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
             public void actionPerformed(ActionEvent e) {
                 completedLbl.setVisible(objective.isSelected());
                 completedSpinner.setVisible(objective.isSelected());
+            }
+        });
+        enableConsoleDebuggingCheckBox.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                EggCrack.LOGGER.setLevel(enableConsoleDebuggingCheckBox.isSelected() ? Level.FINEST : Level.INFO);
             }
         });
     }
@@ -1037,7 +1045,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
         panel25.setBackground(new Color(-1));
         tabs.addTab("About", panel25);
         final JPanel panel26 = new JPanel();
-        panel26.setLayout(new GridLayoutManager(5, 4, new Insets(0, 0, 0, 0), -1, -1));
+        panel26.setLayout(new GridLayoutManager(6, 4, new Insets(0, 0, 0, 0), -1, -1));
         panel26.setBackground(new Color(-1));
         panel25.add(panel26, new GridConstraints(0, 0, 6, 4, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         final JLabel label10 = new JLabel();
@@ -1084,6 +1092,10 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
         label17.setFont(new Font(label17.getFont().getName(), label17.getFont().getStyle(), 14));
         label17.setText("GNU GPL v2");
         panel26.add(label17, new GridConstraints(4, 2, 1, 2, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        enableConsoleDebuggingCheckBox = new JCheckBox();
+        enableConsoleDebuggingCheckBox.setBackground(new Color(-1));
+        enableConsoleDebuggingCheckBox.setText("Enable console debugging");
+        panel26.add(enableConsoleDebuggingCheckBox, new GridConstraints(5, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final Spacer spacer3 = new Spacer();
         panel25.add(spacer3, new GridConstraints(7, 0, 1, 1, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_VERTICAL, 1, GridConstraints.SIZEPOLICY_WANT_GROW, null, null, null, 0, false));
         final JPanel panel27 = new JPanel();

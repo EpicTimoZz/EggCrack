@@ -113,7 +113,7 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
             EggCrack.LOGGER.fine("[Authentication] Trying [username=" + username + ", password=" + password + "].");
 
             userAuthentication.logIn();
-            timer.next();
+            if (timer != null) timer.next();
 
             GameProfile[] profiles = userAuthentication.getAvailableProfiles();
             if (profiles.length <= 0) //Account has no profiles, we logged in but cannot use it.
@@ -152,7 +152,7 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
                     new PasswordCredential(password) //Account password.
             );
         } catch (com.mojang.authlib.exceptions.AuthenticationException e) {
-            timer.next();
+            if (timer != null) timer.next();
 
             String errorMessage = e.getMessage();
 
