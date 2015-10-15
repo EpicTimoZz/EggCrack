@@ -87,6 +87,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
     private JSpinner completedSpinner;
     private JButton configureButton;
     private JCheckBox enableConsoleDebuggingCheckBox;
+    private JCheckBox sortCheckBox;
     private ProxiesInterface proxiesInterface = new ProxiesInterface();
 
     private volatile Session activeSession;
@@ -329,7 +330,12 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
 
             }
         });
-
+        table1.addComponentListener(new ComponentAdapter() {
+            public void componentResized(ComponentEvent e) {
+                if (sortCheckBox.isSelected())
+                    table1.scrollRectToVisible(table1.getCellRect(table1.getRowCount() - 1, 0, true));
+            }
+        });
         final JFileChooser chooser = new JFileChooser();
         ul.addActionListener(new ActionListener() {
             @Override
@@ -525,6 +531,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
                 public void run() {
                     Row row = ensureRow(account);
                     row.setStatus("Trying " + password + "...");
+                    row.sort();
                 }
             });
         }
@@ -538,6 +545,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
                 Row row = ensureRow(account);
                 row.setStatus("<html><b><font color=\"green\">Cracked</font></b></html>");
                 row.setPassword(credential.toString());
+                row.sort();
             }
         });
     }
@@ -559,6 +567,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
             public void run() {
                 Row row = ensureRow(account);
                 row.setRequests(row.getRequests() + 1);
+                row.sort();
             }
         });
     }
@@ -678,7 +687,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
     /**
      * Used from
      * http://stackoverflow.com/questions/625433/how-to-convert-milliseconds-to-x-mins-x-seconds-in-java
-     * <p/>
+     * <p>
      * Convert a millisecond duration to a string format
      *
      * @param millis A duration to convert to a string form
@@ -871,7 +880,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
         proxyTimeout.setEnabled(true);
         pnl.add(proxyTimeout, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel11 = new JPanel();
-        panel11.setLayout(new GridLayoutManager(3, 4, new Insets(5, 10, 5, 2), -1, -1));
+        panel11.setLayout(new GridLayoutManager(4, 4, new Insets(5, 10, 5, 2), -1, -1));
         panel11.setBackground(new Color(-1));
         panel2.add(panel11, new GridConstraints(4, 0, 1, 2, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, null, null, null, 0, false));
         panel11.setBorder(BorderFactory.createTitledBorder(BorderFactory.createLineBorder(new Color(-6710887)), "Methodology", TitledBorder.CENTER, TitledBorder.TOP, new Font("Levenim MT", panel11.getFont().getStyle(), panel11.getFont().getSize()), new Color(-16777216)));
@@ -900,6 +909,11 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
         completedSpinner = new JSpinner();
         completedSpinner.setEnabled(true);
         panel13.add(completedSpinner, new GridConstraints(0, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        sortCheckBox = new JCheckBox();
+        sortCheckBox.setBackground(new Color(-1));
+        sortCheckBox.setSelected(true);
+        sortCheckBox.setText("Auto-sort rows");
+        panel11.add(sortCheckBox, new GridConstraints(2, 0, 1, 4, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         final JPanel panel14 = new JPanel();
         panel14.setLayout(new GridLayoutManager(2, 1, new Insets(5, 10, 5, 2), -1, -1));
         panel14.setBackground(new Color(-1));
