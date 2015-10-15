@@ -24,6 +24,7 @@ EggCrack originally gained its popularity on Nodus Forums back in 2013, when the
 <li><a href="https://github.com/Manevolent/EggCrack/archive/master.zip">Latest release</a></li>
 </ul>
 <p>If you are an end-user running EggCrack, everything you need is in the <b>release</b> folder. If an update is available, the program will automatically alert you.</p>
+<p>To verify the downloads, see the corrosponding .sig files in the release directory. The GPG ASC key has also been provided.</p>
 </p>
 
 <h2>Bugs and Issues</h2>
