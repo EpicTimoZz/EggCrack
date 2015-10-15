@@ -74,7 +74,7 @@ public class RunnableAuthenticator implements Runnable {
                         return;
                     } else
                         throw new AuthenticationException(
-                                AuthenticationException.AuthenticationFailure.INCORRECT_CREDENTIAL
+                                AuthenticationException.AuthenticationFailure.INCORRECT_CREDENTIAL, "Incorrect credential"
                         );
                 } catch (AuthenticationException exception) {
                     if (exception.getFailure().hasRequested()) {
@@ -83,7 +83,8 @@ public class RunnableAuthenticator implements Runnable {
                     }
 
                     if (exception.getFailure().getAction() == AuthenticationException.AuthenticationAction.STOP) {
-                        EggCrack.LOGGER.warning("Stopping session for " + account.getUsername() + ": " + exception.getMessage());
+                        EggCrack.LOGGER.warning("Stopping session for " + account.getUsername() + ": "
+                                + exception.getMessage() + " (" + exception.getDetails() + ")");
                         break;
                     } else if (exception.getFailure().getAction() == AuthenticationException.AuthenticationAction.NEXT_CREDENTIALS) {
                         account.setProgress(((AbstractExtendedList.LoopedIterator)credentialIterator).getProgress());

@@ -2,11 +2,17 @@ package net.teamlixo.eggcrack.authentication;
 
 public class AuthenticationException extends Exception {
     private final AuthenticationFailure failure;
+    private final String details;
 
-    public AuthenticationException(AuthenticationFailure failure) {
+    public AuthenticationException(AuthenticationFailure failure, String details) {
         super(failure.getMessage());
 
         this.failure = failure;
+        this.details = details;
+    }
+
+    public String getDetails() {
+        return details;
     }
 
     public AuthenticationFailure getFailure() {

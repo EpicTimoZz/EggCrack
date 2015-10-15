@@ -38,6 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -143,7 +144,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
                 }
 
                 //Set up the executor service responsible for executing threads.
-                ExecutorService executorService = Executors.newFixedThreadPool(
+                ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(
                         (Integer) maxthreads.getValue(),
                         new AuthenticatorThreadFactory(Thread.MIN_PRIORITY)
                 );
@@ -658,6 +659,8 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
         this.tps.setText(String.valueOf(attempts - lastAttempts));
         lastAttempts = attempts;
 
+        UserInterface.this.thdcount.setText(activeSession.getCurrentThreads());
+
         // ETA:
 
         if (progress > 0F) {
@@ -716,6 +719,8 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
                 setupConfiguration();
 
                 UserInterface.this.tabs.setSelectedIndex(1);
+                UserInterface.this.thdcount.setText("0");
+
                 emptyRows();
                 JOptionPane.showMessageDialog(UserInterface.this, "Cracking completed.", "EggCrack", JOptionPane.INFORMATION_MESSAGE);
                 start.setText("Start");

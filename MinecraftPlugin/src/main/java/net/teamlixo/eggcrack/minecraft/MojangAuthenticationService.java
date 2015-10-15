@@ -56,7 +56,7 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
     @Override
     protected AuthenticatedAccount authenticate(Account account, String password, Proxy proxy) throws AuthenticationException {
         if (!(account instanceof AttemptedAccount))
-            throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT);
+            throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT, "account not properly instantiated");
 
         return authenticateMinecraft(account.getUsername(), password, proxy);
     }
@@ -97,7 +97,7 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
 
                 if (proxy.type() != Proxy.Type.DIRECT && !timer.isReady()) {
                     if (!unavailableProxies.contains(proxy)) unavailableProxies.add(proxy);
-                    throw new AuthenticationException(AuthenticationException.AuthenticationFailure.BAD_PROXY);
+                    throw new AuthenticationException(AuthenticationException.AuthenticationFailure.BAD_PROXY, "Bad proxy");
                 } else unavailableProxies.remove(proxy);
             }
         }
@@ -117,7 +117,7 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
 
             GameProfile[] profiles = userAuthentication.getAvailableProfiles();
             if (profiles.length <= 0) //Account has no profiles, we logged in but cannot use it.
-                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.NO_PROFILES);
+                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.NO_PROFILES, "Account has no profiles");
             GameProfile profile = userAuthentication.getSelectedProfile();
             if (profile == null) profile = profiles[0]; //Select first profile on the account.
 
@@ -133,12 +133,12 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
                         HttpURLConnection urlConnection = (HttpURLConnection) URI.create(url).toURL().openConnection(proxy);
                         if (urlConnection.getResponseCode() / 100 != 2)
                             throw new AuthenticationException(
-                                    AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT
+                                    AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT, "Missing cape"
                             );
 
                         break;
                     } catch (UnsupportedEncodingException e) {
-                        throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT);
+                        throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT, e.getMessage());
                     } catch (IOException e) {
                         // Retry.
                     }
@@ -160,21 +160,21 @@ public class MojangAuthenticationService extends PasswordAuthenticationService {
 
             if (errorMessage.equals("Invalid credentials. Invalid username or password.")) {
                 //Username or password is not correct.
-                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INCORRECT_CREDENTIAL);
+                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INCORRECT_CREDENTIAL, errorMessage);
             } else if (errorMessage.equals("Invalid credentials.")) {
-                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.REJECTED);
+                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.REJECTED, errorMessage);
             } else if (errorMessage.equals("Cannot contact authentication server")) {
-                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.TIMEOUT);
+                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.TIMEOUT, errorMessage);
             } else if (errorMessage.equals("Invalid credentials. Account migrated, use e-mail as username.") ||
                     errorMessage.equals("Invalid credentials. Account migrated, use email as username.") ||
                     errorMessage.equals("Invalid username")) {
-                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT);
+                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_ACCOUNT, errorMessage);
             } else {
                 EggCrack.LOGGER.warning("[Authentication] Unexpected response: " + e.getMessage());
-                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.REJECTED);
+                throw new AuthenticationException(AuthenticationException.AuthenticationFailure.REJECTED, errorMessage);
             }
         } catch (NoSuchElementException exception) {
-            throw new AuthenticationException(AuthenticationException.AuthenticationFailure.BAD_PROXY);
+            throw new AuthenticationException(AuthenticationException.AuthenticationFailure.BAD_PROXY, "Bad proxy");
         }
     }
 

@@ -21,10 +21,11 @@ import java.util.Iterator;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.Logger;
 
 public class Session implements Runnable, AuthenticationCallback, ProxyCallback {
-    private final ExecutorService executorService;
+    private final ThreadPoolExecutor executorService;
     private final AuthenticationService authenticationService;
 
     private final ExtendedList<Account> accountList;
@@ -43,7 +44,7 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
 
     private volatile boolean running = true;
 
-    public Session(ExecutorService executorService,
+    public Session(ThreadPoolExecutor executorService,
                    AuthenticationService authenticationService,
                    ExtendedList<Account> accountList,
                    ExtendedList<Credential> credentialList,
@@ -252,12 +253,12 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
         }
     }
 
-    public int getTotalProxies() {
-        return proxyList.size();
-    }
-
     public boolean isRunning() {
         return running;
+    }
+
+    public String getCurrentThreads() {
+        return String.valueOf(executorService.getActiveCount());
     }
 
     private interface FutureRunnable {

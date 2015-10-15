@@ -20,7 +20,7 @@ public abstract class PasswordAuthenticationService extends AbstractAuthenticati
     @Override
     public AuthenticatedAccount authenticate(Account account, Credential credential, Proxy proxy) throws AuthenticationException {
         if (!(credential instanceof PasswordCredential))
-            throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_CREDENTIAL);
+            throw new AuthenticationException(AuthenticationException.AuthenticationFailure.INVALID_CREDENTIAL, "credential not properly instantiated");
 
         return authenticate(account, ((PasswordCredential)credential).getPassword(), proxy);
     }

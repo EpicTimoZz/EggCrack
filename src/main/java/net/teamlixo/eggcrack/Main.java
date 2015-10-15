@@ -37,6 +37,7 @@ import java.net.*;
 import java.util.Calendar;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -287,7 +288,7 @@ public final class Main {
         EggCrack.LOGGER.info("Starting EggCrack at " + Calendar.getInstance().getTime().toString() + "...");
 
         //Set up the executor service responsible for executing threads.
-        ExecutorService executorService = Executors.newFixedThreadPool(
+        ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(
                 threads,
                 new AuthenticatorThreadFactory(Thread.MIN_PRIORITY)
         );
