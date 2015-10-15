@@ -77,14 +77,11 @@
 /*  77 */       outStream.flush();
 /*  78 */       outStream.close();
 
-                if (conn.getResponseCode() / 100 != 2) throw new IOException(conn.getResponseMessage());
-/*     */       
-/*  80 */       InputStream inStream = null;
-/*     */       try {
-/*  82 */         inStream = conn.getInputStream();
-/*     */       } catch (Exception e) {
-/*  84 */         inStream = conn.getErrorStream();
-/*     */       }
+                InputStream inStream = null;
+                if (conn.getResponseCode() / 100 != 2) inStream = conn.getErrorStream();
+                else inStream = conn.getInputStream();
+
+                if (inStream == null) throw new IOException(conn.getResponseMessage());
 /*     */       
 /*  87 */       StringBuilder response = new StringBuilder();
 /*  88 */       byte[] buffer = new byte[2048];
@@ -92,6 +89,7 @@
 /*  90 */       while ((bytesRead = inStream.read(buffer)) > 0) {
 /*  91 */         response.append(new String(buffer, "UTF-8").substring(0, bytesRead));
 /*     */       }
+        System.out.println(response.toString());
 /*  93 */       return response.toString();
 /*     */     }
 /*     */     catch (IOException e) {

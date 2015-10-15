@@ -76,9 +76,10 @@ public class EggCrackAuthenticationService extends PasswordAuthenticationService
         Timer timer = null;
         synchronized (intervalMap) { //Not sure if HashMaps are thread-safe.
             if (disbleProxies.getValue()) {
-                if (!intervalMap.containsKey(proxyAddress))
-                    intervalMap.put(proxyAddress, new IntervalTimer(interval, IntervalTimer.RateWindow.SECOND));
                 timer = intervalMap.get(proxyAddress);
+
+                if (timer == null)
+                    intervalMap.put(proxyAddress, timer = new IntervalTimer(interval, IntervalTimer.RateWindow.SECOND));
 
                 if (proxy.type() != Proxy.Type.DIRECT && !timer.isReady()) {
                     if (!unavailableProxies.contains(proxy)) unavailableProxies.add(proxy);
@@ -94,7 +95,7 @@ public class EggCrackAuthenticationService extends PasswordAuthenticationService
             if (timer != null) timer.next();
         } catch (IOException | NoSuchElementException e) {
             throw new net.teamlixo.eggcrack.authentication.AuthenticationException(
-                    AuthenticationException.AuthenticationFailure.REJECTED,
+                    AuthenticationException.AuthenticationFailure.BAD_PROXY,
                     e.getMessage()
             );
         }

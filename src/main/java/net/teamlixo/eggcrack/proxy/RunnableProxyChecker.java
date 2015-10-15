@@ -23,19 +23,9 @@ public class RunnableProxyChecker implements Runnable {
     public void run() {
         try {
             HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection(proxy);
-
             urlConnection.setConnectTimeout(timeout);
             urlConnection.setUseCaches(false);
-
-            long start = System.currentTimeMillis();
             urlConnection.connect();
-            int remaining = Math.max(1000, timeout - (int) (System.currentTimeMillis() - start));
-            urlConnection.setReadTimeout(remaining);
-
-            if (urlConnection.getResponseCode() / 100 != 2)
-                callback.onProxyFailed(proxy);
-
-            urlConnection.getInputStream().close();
         } catch (IOException e) {
             callback.onProxyFailed(proxy);
         }
