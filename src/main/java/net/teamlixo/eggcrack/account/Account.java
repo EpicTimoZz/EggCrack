@@ -1,5 +1,7 @@
 package net.teamlixo.eggcrack.account;
 
+import net.teamlixo.eggcrack.EggCrack;
+
 public abstract class Account {
     private final String username;
     private String uncheckedPassword;
@@ -64,6 +66,7 @@ public abstract class Account {
     }
 
     public void setState(State state) {
+        if (this.state != state) EggCrack.LOGGER.fine("Account " + getUsername() + " => " + state);
         if (state == State.STARTED) setProgress(0F);
         else if (state == State.FINISHED) setProgress(1F);
 

@@ -50,7 +50,7 @@ public abstract class AbstractExtendedList<T> implements ExtendedList<T> {
     public class LoopedIterator implements Iterator {
         private final Object lock = new Object();
         private final ExtendedList<T> list;
-        private volatile int idx = 0;
+        private volatile int idx = -1;
         private final boolean looping;
 
         public LoopedIterator(ExtendedList<T> list, boolean b) {

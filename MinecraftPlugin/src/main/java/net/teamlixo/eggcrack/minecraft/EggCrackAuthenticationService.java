@@ -19,6 +19,7 @@ import org.mcupdater.Yggdrasil.SessionResponse;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.util.*;
 
 public class EggCrackAuthenticationService extends PasswordAuthenticationService {
@@ -91,7 +92,7 @@ public class EggCrackAuthenticationService extends PasswordAuthenticationService
         try {
             response = authManager.authenticate(account.getUsername(), password, "", proxy);
             if (timer != null) timer.next();
-        } catch (IOException e) {
+        } catch (IOException | NoSuchElementException e) {
             throw new net.teamlixo.eggcrack.authentication.AuthenticationException(
                     AuthenticationException.AuthenticationFailure.REJECTED,
                     e.getMessage()
@@ -170,10 +171,15 @@ public class EggCrackAuthenticationService extends PasswordAuthenticationService
                     }
                 }
 
+                // Get UUID
+                byte[] uuidBytes = hexStringToByteArray(profile.getId());
+                ByteBuffer uuidBuffer = ByteBuffer.wrap(uuidBytes);
+                UUID uuid = new UUID(uuidBuffer.getLong(), uuidBuffer.getLong());
+
                 return new AuthenticatedAccount(
                         username, //Account username
                         profile.getName(), //Account display name in-game
-                        UUID.fromString(profile.getId()), //Account UUID in-game
+                        uuid, //Account UUID in-game
                         new PasswordCredential(password) //Account password.
                 );
             } else throw new AuthenticationException(
@@ -183,8 +189,6 @@ public class EggCrackAuthenticationService extends PasswordAuthenticationService
         }
         catch (Exception ex)
         {
-            ex.printStackTrace();
-
             throw new net.teamlixo.eggcrack.authentication.AuthenticationException(
                     net.teamlixo.eggcrack.authentication.AuthenticationException.AuthenticationFailure.REJECTED,
                     ex.getMessage()
@@ -195,5 +199,15 @@ public class EggCrackAuthenticationService extends PasswordAuthenticationService
     @Override
     public int unavailableProxies() {
         return unavailableProxies.size();
+    }
+
+    public static byte[] hexStringToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i+1), 16));
+        }
+        return data;
     }
 }

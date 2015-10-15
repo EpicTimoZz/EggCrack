@@ -1,12 +1,13 @@
 package net.teamlixo.eggcrack.session;
 
 public final class Tracker {
-    private int completed = 0;
-    private int failed = 0;
-    private int requests = 0;
-    private int attempts = 0;
-    private long start = System.currentTimeMillis();
-    private int total = 0;
+    private final long start = System.currentTimeMillis();
+
+    private volatile int completed = 0;
+    private volatile int failed = 0;
+    private volatile int requests = 0;
+    private volatile int attempts = 0;
+    private volatile int total = 0;
 
     public Tracker() {
     }

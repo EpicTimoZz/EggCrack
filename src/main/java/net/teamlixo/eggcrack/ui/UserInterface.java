@@ -613,6 +613,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
     public void started(Step step) {
         if (step == Step.CRACKING) {
             this.tabs.setSelectedIndex(1);
+            this.lastAttempts = 0L;
 
             EventQueue.invokeLater(new Runnable() {
                 @Override
@@ -718,6 +719,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
             public void run() {
                 setupConfiguration();
 
+                UserInterface.this.tps.setText("0");
                 UserInterface.this.tabs.setSelectedIndex(1);
                 UserInterface.this.thdcount.setText("0");
 
