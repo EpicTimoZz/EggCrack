@@ -1,6 +1,5 @@
 package net.teamlixo.eggcrack.minecraft;
 
-import com.mojang.authlib.Agent;
 import net.teamlixo.eggcrack.EggCrack;
 import net.teamlixo.eggcrack.plugin.PluginLoadException;
 import net.teamlixo.eggcrack.plugin.java.JavaPlugin;
@@ -22,9 +21,7 @@ public final class MinecraftPlugin extends JavaPlugin {
             throw new PluginLoadException(e);
         }
 
-        EggCrack.getInstance().registerAuthenticationService(
-                new MojangAuthenticationService("Minecraft", new MojangAuthenticationFactory(Agent.MINECRAFT))
-        );
+        EggCrack.getInstance().registerAuthenticationService(new EggCrackAuthenticationService("Minecraft"));
     }
 
     @Override

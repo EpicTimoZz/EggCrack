@@ -431,7 +431,7 @@ public class UserInterface extends JDialog implements AccountListener, SessionLi
         enableConsoleDebuggingCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                EggCrack.LOGGER.setLevel(enableConsoleDebuggingCheckBox.isSelected() ? Level.FINEST : Level.INFO);
+                EggCrack.LOGGER.getHandlers()[0].setLevel(enableConsoleDebuggingCheckBox.isSelected() ? Level.ALL : Level.INFO);
             }
         });
     }

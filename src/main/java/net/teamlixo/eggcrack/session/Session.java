@@ -132,6 +132,7 @@ public class Session implements Runnable, AuthenticationCallback, ProxyCallback 
             futureList.add(
                     executorService.submit(
                             new RunnableAuthenticator(
+                                    this,
                                     authenticationService,
                                     accountIterator.next(),
                                     tracker,

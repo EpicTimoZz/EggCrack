@@ -7,6 +7,7 @@ import net.teamlixo.eggcrack.list.AbstractExtendedList;
 import net.teamlixo.eggcrack.account.Account;
 import net.teamlixo.eggcrack.account.AccountListener;
 import net.teamlixo.eggcrack.credential.Credential;
+import net.teamlixo.eggcrack.session.Session;
 import net.teamlixo.eggcrack.session.Tracker;
 
 import java.net.Proxy;
@@ -20,6 +21,7 @@ import java.util.logging.Level;
  * should be both thread-safe and support many separate requesting accounts asynchronously.
  */
 public class RunnableAuthenticator implements Runnable {
+    private Session session;
     private AuthenticationService authenticationService;
     private Account account;
     private Iterator<Credential> credentialIterator;
@@ -27,12 +29,14 @@ public class RunnableAuthenticator implements Runnable {
     private AuthenticationCallback authenticationCallback;
     private Tracker tracker;
 
-    public RunnableAuthenticator(AuthenticationService authenticationService,
+    public RunnableAuthenticator(Session session,
+                                 AuthenticationService authenticationService,
                                  Account account,
                                  Tracker tracker,
                                  Iterator<Credential> credentialIterator,
                                  Iterator<Proxy> proxyIterator,
                                  AuthenticationCallback authenticationCallback) {
+        this.session = session;
         this.authenticationService = authenticationService;
         this.account = account;
         this.credentialIterator = credentialIterator;
@@ -43,6 +47,8 @@ public class RunnableAuthenticator implements Runnable {
 
     @Override
     public void run() {
+        if (!session.isRunning()) return;
+
         account.setState(Account.State.STARTED);
 
         Thread.currentThread().setName("Authenticator-" + account.getUsername());
@@ -52,14 +58,14 @@ public class RunnableAuthenticator implements Runnable {
 
         Credential credential = account.getUncheckedPassword() != null ?
                 Credentials.createPassword(account.getUncheckedPassword()) : null;
-        if (credential != null) if (accountListener != null) accountListener.onAccountAttempting(account, credential);
+        if (credential != null && accountListener != null) accountListener.onAccountAttempting(account, credential);
 
-        while (proxyIterator.hasNext()) {
+        while (proxyIterator.hasNext() && session.isRunning()) {
             try {
                 if (credential == null) {
-                    if (accountListener != null) accountListener.onAccountTried(account, credential);
+                    if (accountListener != null && session.isRunning()) accountListener.onAccountTried(account, credential);
                     credential = credentialIterator.next();
-                    if (accountListener != null) accountListener.onAccountAttempting(account, credential);
+                    if (accountListener != null && session.isRunning()) accountListener.onAccountAttempting(account, credential);
                 }
 
                 EggCrack.LOGGER.finest("[Account: " + account.getUsername() +
@@ -70,7 +76,7 @@ public class RunnableAuthenticator implements Runnable {
                             authenticationService.authenticate(account, credential, proxyIterator.next());
                     if (authenticatedAccount != null) {
                         authenticationCallback.onAuthenticationCompleted(authenticatedAccount);
-                        if (accountListener != null) accountListener.onAccountCompleted(account, credential);
+                        if (accountListener != null && session.isRunning()) accountListener.onAccountCompleted(account, credential);
                         return;
                     } else
                         throw new AuthenticationException(
@@ -79,23 +85,27 @@ public class RunnableAuthenticator implements Runnable {
                 } catch (AuthenticationException exception) {
                     if (exception.getFailure().hasRequested()) {
                         tracker.setRequests(tracker.getRequests() + 1);
-                        if (accountListener != null) accountListener.onAccountRequested(account);
+                        if (accountListener != null && session.isRunning()) accountListener.onAccountRequested(account);
                     }
 
                     if (exception.getFailure().getAction() == AuthenticationException.AuthenticationAction.STOP) {
+                        synchronized (tracker) {
+                            tracker.setAttempts(tracker.getAttempts() + 1);
+                        }
+
                         EggCrack.LOGGER.warning("Stopping session for " + account.getUsername() + ": "
                                 + exception.getMessage() + " (" + exception.getDetails() + ")");
                         break;
                     } else if (exception.getFailure().getAction() == AuthenticationException.AuthenticationAction.NEXT_CREDENTIALS) {
                         account.setProgress(((AbstractExtendedList.LoopedIterator)credentialIterator).getProgress());
 
-                        if (accountListener != null) accountListener.onAccountTried(account, credential);
+                        if (accountListener != null && session.isRunning()) accountListener.onAccountTried(account, credential);
                         synchronized (tracker) {
                             tracker.setAttempts(tracker.getAttempts() + 1);
                         }
                         if (account.getUncheckedPassword() == null) {
                             credential = credentialIterator.next();
-                            if (accountListener != null) accountListener.onAccountAttempting(account, credential);
+                            if (accountListener != null && session.isRunning()) accountListener.onAccountAttempting(account, credential);
                         } else
                             break; // Checker only tries one password.
                     }
@@ -108,7 +118,7 @@ public class RunnableAuthenticator implements Runnable {
             }
         }
 
-        if (accountListener != null) accountListener.onAccountFailed(account );
+        if (accountListener != null && session.isRunning()) accountListener.onAccountFailed(account );
         authenticationCallback.onAuthenticationFailed(account);
         account.setState(Account.State.FINISHED);
     }

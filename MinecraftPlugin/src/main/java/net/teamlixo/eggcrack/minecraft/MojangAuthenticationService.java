@@ -19,8 +19,11 @@ import java.net.*;
 import java.util.*;
 
 /**
- * Lowest-level functionality of EggCrack; all requests are created and managed here.
+ * Lowest-level functionality of EggCrack 2.0; all requests are created and managed here.
+ *
+ * Deprecated because of long timeouts.
  */
+@Deprecated
 public class MojangAuthenticationService extends PasswordAuthenticationService {
     private static final int MINIMUM_PASSWORD_LEGTH = 6; //Mojang specification
     private static final InetAddress LOCAL_ADDRESS = InetAddress.getLoopbackAddress();
